@@ -66,7 +66,7 @@ void LogsWidget::createUI()
 
     logsConsoleTextEdit = new TextEditConsole(this);
     logsConsoleTextEdit->setReadOnly(true);
-    logsConsoleTextEdit->setProperty("TextEditStyle", "console" );
+    logsConsoleTextEdit->setStyleSheet("background-color: #151515; color: #BEBEBE; border: 1px solid #2A2A2A; border-radius: 4px;");
     logsConsoleTextEdit->setAutoScrollEnabled(true);
 
     logsGridLayout = new QGridLayout(this);

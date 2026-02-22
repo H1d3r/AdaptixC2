@@ -17,13 +17,13 @@ void TaskOutputWidget::createUI()
 {
     inputMessage = new QLineEdit(this);
     inputMessage->setReadOnly(true);
-    inputMessage->setProperty("LineEditStyle", "console");
+    inputMessage->setStyleSheet("background-color: #151515; color: #BEBEBE; border: 1px solid #2A2A2A; padding: 4px; border-radius: 4px;");
     inputMessage->setFont( FontManager::instance().getFont("Hack") );
 
     outputTextEdit = new QTextEdit(this);
     outputTextEdit->setReadOnly(true);
     outputTextEdit->setWordWrapMode(QTextOption::WrapAnywhere);
-    outputTextEdit->setProperty("TextEditStyle", "console" );
+    outputTextEdit->setStyleSheet("background-color: #151515; color: #BEBEBE; border: 1px solid #2A2A2A; border-radius: 4px;");
 
     mainGridLayout = new QGridLayout(this );
     mainGridLayout->setVerticalSpacing(4 );
@@ -69,7 +69,7 @@ TasksWidget::TasksWidget( AdaptixWidget* w )
     dockWidgetOutput->setWidget(taskOutputConsole);
     dockWidgetOutput->setIcon(QIcon( ":/icons/job" ), KDDockWidgets::IconPlace::TabBar);
 
-    connect(tableView,  &QTableWidget::customContextMenuRequested, this, &TasksWidget::handleTasksMenu);
+    connect(tableView,  &QTableView::customContextMenuRequested, this, &TasksWidget::handleTasksMenu);
     connect(tableView->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this](const QItemSelection &selected, const QItemSelection &deselected){
         Q_UNUSED(selected)
         Q_UNUSED(deselected)

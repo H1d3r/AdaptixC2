@@ -199,7 +199,7 @@ void DialogAgent::createUI()
     buildLogOutput->setReadOnly(true);
     buildLogOutput->setMinimumHeight(150);
     buildLogOutput->setVisible(false);
-    buildLogOutput->setProperty("TextEditStyle", "console");
+    buildLogOutput->setStyleSheet("background-color: #151515; color: #BEBEBE; border: 1px solid #2A2A2A; border-radius: 4px;");
     buildLogOutput->setFont(FontManager::instance().getFont("Hack"));
 
     auto buildLogLayout = new QVBoxLayout();

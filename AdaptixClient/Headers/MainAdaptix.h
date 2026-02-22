@@ -30,6 +30,7 @@ public:
     void Start() const;
     void NewProject() const;
     void SetApplicationTheme() const;
+    void ApplyApplicationFont() const;
 
     static AuthProfile* Login();
 };

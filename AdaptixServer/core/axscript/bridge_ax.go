@@ -1014,9 +1014,7 @@ func exportStringArray(rt *goja.Runtime, val goja.Value) []string {
 	return nil
 }
 
-// /---
 func convertQtFormatToGo(qtFmt string) string {
-	// Simple Qt-to-Go date format conversion for common patterns
 	r := strings.NewReplacer(
 		"yyyy", "2006", "yy", "06",
 		"MM", "01", "M", "1",

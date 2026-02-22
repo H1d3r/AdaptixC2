@@ -443,7 +443,10 @@ SpinTable::SpinTable(int rows, int columns, QWidget* parent)
 
     buttonClear = new QPushButton("Clear");
 
-    table = new QTableWidget(rows, columns, this);
+    tableModel = new QStandardItemModel(rows, columns, this);
+
+    table = new QTableView(this);
+    table->setModel(tableModel);
     table->setAutoFillBackground( false );
     table->setShowGrid( false );
     table->setSortingEnabled( true );
@@ -467,16 +470,16 @@ SpinTable::SpinTable(int rows, int columns, QWidget* parent)
 
     QObject::connect(buttonAdd, &QPushButton::clicked, this, [&]()
     {
-        if (table->rowCount() < 1 )
-            table->setRowCount(1 );
+        if (tableModel->rowCount() < 1 )
+            tableModel->setRowCount(1 );
         else
-            table->setRowCount(table->rowCount() + 1 );
+            tableModel->setRowCount(tableModel->rowCount() + 1 );
 
-        table->setItem(table->rowCount() - 1, 0, new QTableWidgetItem() );
-        table->selectRow(table->rowCount() - 1 );
+        tableModel->setItem(tableModel->rowCount() - 1, 0, new QStandardItem() );
+        table->selectRow(tableModel->rowCount() - 1 );
     } );
 
-    QObject::connect(buttonClear, &QPushButton::clicked, this, [&](){ table->setRowCount(0); } );
+    QObject::connect(buttonClear, &QPushButton::clicked, this, [&](){ tableModel->setRowCount(0); } );
 }
 
 

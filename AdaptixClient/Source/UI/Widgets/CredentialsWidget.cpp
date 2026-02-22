@@ -14,8 +14,8 @@ CredentialsWidget::CredentialsWidget(AdaptixWidget* w) : DockTab("Credentials", 
 {
     this->createUI();
 
-    connect(tableView, &QTableWidget::customContextMenuRequested, this, &CredentialsWidget::handleCredentialsMenu);
-    connect(tableView, &QTableWidget::doubleClicked,              this, &CredentialsWidget::onEditCreds);
+    connect(tableView, &QTableView::customContextMenuRequested, this, &CredentialsWidget::handleCredentialsMenu);
+    connect(tableView, &QTableView::doubleClicked,              this, &CredentialsWidget::onEditCreds);
     connect(tableView->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this](const QItemSelection &selected, const QItemSelection &deselected){
         Q_UNUSED(selected)
         Q_UNUSED(deselected)

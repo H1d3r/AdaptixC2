@@ -14,8 +14,8 @@ TargetsWidget::TargetsWidget(AdaptixWidget* w) : DockTab("Targets", w->GetProfil
 {
     this->createUI();
 
-    connect(tableView,  &QTableWidget::customContextMenuRequested, this, &TargetsWidget::handleTargetsMenu);
-    connect(tableView,  &QTableWidget::doubleClicked,              this, &TargetsWidget::onEditTarget);
+    connect(tableView,  &QTableView::customContextMenuRequested, this, &TargetsWidget::handleTargetsMenu);
+    connect(tableView,  &QTableView::doubleClicked,              this, &TargetsWidget::onEditTarget);
     connect(tableView->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this](const QItemSelection &selected, const QItemSelection &deselected){
         Q_UNUSED(selected)
         Q_UNUSED(deselected)

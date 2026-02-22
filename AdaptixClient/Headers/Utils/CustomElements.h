@@ -390,10 +390,11 @@ public:
 class SpinTable : public QWidget {
 Q_OBJECT
 public:
-    QGridLayout*  layout      = nullptr;
-    QTableWidget* table       = nullptr;
-    QPushButton*  buttonAdd   = nullptr;
-    QPushButton*  buttonClear = nullptr;
+    QGridLayout*        layout      = nullptr;
+    QTableView*         table       = nullptr;
+    QStandardItemModel* tableModel  = nullptr;
+    QPushButton*        buttonAdd   = nullptr;
+    QPushButton*        buttonClear = nullptr;
 
     SpinTable(int rows, int clomuns, QWidget* parent);
 

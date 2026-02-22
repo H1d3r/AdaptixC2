@@ -10,7 +10,8 @@
 #include <QDialog>
 #include <QLabel>
 #include <QLineEdit>
-#include <QTableWidget>
+#include <QTableView>
+#include <QStandardItemModel>
 #include <QPushButton>
 #include <QMenu>
 #include <QRegularExpression>

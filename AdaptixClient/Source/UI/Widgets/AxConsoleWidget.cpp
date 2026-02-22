@@ -85,14 +85,14 @@ void AxConsoleWidget::createUI()
 
     OutputTextEdit = new TextEditConsole(this, 50000, true, true);
     OutputTextEdit->setReadOnly(true);
-    OutputTextEdit->setProperty( "TextEditStyle", "console" );
+    OutputTextEdit->setStyleSheet("background-color: #151515; color: #BEBEBE; border: 1px solid #2A2A2A; border-radius: 4px;");
     OutputTextEdit->setFont( FontManager::instance().getFont("Hack") );
 
     CmdLabel = new QLabel( "ax >", this );
-    CmdLabel->setProperty( "LabelStyle", "console" );
+    CmdLabel->setStyleSheet("padding: 4px; color: #BEBEBE; background-color: transparent;");
 
     InputLineEdit = new QLineEdit(this);
-    InputLineEdit->setProperty( "LineEditStyle", "console" );
+    InputLineEdit->setStyleSheet("background-color: #151515; color: #BEBEBE; border: 1px solid #2A2A2A; padding: 4px; border-radius: 4px;");
     InputLineEdit->setFont( FontManager::instance().getFont("Hack") );
 
     ResetButton = new QPushButton("Reset AxScript");

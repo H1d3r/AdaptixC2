@@ -212,38 +212,9 @@ void MainAdaptix::SetApplicationTheme() const
     QApplication::setStyle(style);
 
     FontManager::instance().initialize();
-
-    QString appFontFamily = settings->data.FontFamily;
-    if (appFontFamily.startsWith("Adaptix"))
-        appFontFamily = appFontFamily.split("-")[1].trimmed();
-
-    auto appFont = QFont( appFontFamily );
-    appFont.setPointSize( settings->data.FontSize );
-    QApplication::setFont( appFont );
+    ApplyApplicationFont();
 
     QString additionalStyles = R"(
-        QLabel[LabelStyle="console"] {
-            padding: 4px;
-            color: #BEBEBE;
-            background-color: transparent;
-        }
-        QLineEdit[LineEditStyle="console"] {
-            background-color: #151515;
-            color: #BEBEBE;
-            border: 1px solid #2A2A2A;
-            padding: 4px;
-            border-radius: 4px;
-        }
-        QLineEdit[LineEditStyle="console"]:focus {
-            border: 1px solid #3D8B6A;
-        }
-        QTextEdit[TextEditStyle="console"], QPlainTextEdit[TextEditStyle="console"] {
-            background-color: #151515;
-            color: #BEBEBE;
-            border: 1px solid #2A2A2A;
-            border-radius: 4px;
-        }
-
         QMenu::separator {
             height: 1px;
             background-color: #3A3A3A;
@@ -252,4 +223,38 @@ void MainAdaptix::SetApplicationTheme() const
     )";
     QApplication *app = qobject_cast<QApplication*>(QCoreApplication::instance());
     app->setStyleSheet(additionalStyles);
+}
+
+void MainAdaptix::ApplyApplicationFont() const
+{
+    if (!qlementineStyle)
+        return;
+
+    QString appFontFamily = settings->data.FontFamily;
+    if (appFontFamily.contains(" - "))
+        appFontFamily = appFontFamily.split("-")[1].trimmed();
+
+    int appFontSize = settings->data.FontSize;
+
+    auto theme = qlementineStyle->theme();
+
+    theme.fontRegular.setFamily(appFontFamily);
+    theme.fontRegular.setPointSize(appFontSize);
+
+    theme.fontBold.setFamily(appFontFamily);
+    theme.fontBold.setPointSize(appFontSize);
+
+    theme.fontH1.setFamily(appFontFamily);
+    theme.fontH2.setFamily(appFontFamily);
+    theme.fontH3.setFamily(appFontFamily);
+    theme.fontH4.setFamily(appFontFamily);
+    theme.fontH5.setFamily(appFontFamily);
+
+    theme.fontCaption.setFamily(appFontFamily);
+
+    theme.fontMonospace.setFamily(appFontFamily);
+    theme.fontMonospace.setPointSize(appFontSize);
+
+    qlementineStyle->setTheme(theme);
+    QApplication::setFont(theme.fontRegular);
 }

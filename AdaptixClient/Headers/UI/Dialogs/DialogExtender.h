@@ -11,20 +11,22 @@ class DialogExtender : public QWidget
 {
 Q_OBJECT
 
-    Extender*     extender    = nullptr;
-    QGridLayout*  layout      = nullptr;
-    QTabWidget*   tabWidget   = nullptr;
+    Extender*     extender  = nullptr;
+    QGridLayout*  layout    = nullptr;
+    QTabWidget*   tabWidget = nullptr;
 
-    QTableWidget* tableWidget       = nullptr;
-    QSplitter*    splitter          = nullptr;
-    QTextEdit*    textComment       = nullptr;
+    QTableView*         tableView   = nullptr;
+    QStandardItemModel* tableModel  = nullptr;
+    QSplitter*          splitter    = nullptr;
+    QTextEdit*          textComment = nullptr;
 
-    QWidget*      serverTab            = nullptr;
-    QComboBox*    serverProjectCombo   = nullptr;
-    QTableWidget* serverTableWidget    = nullptr;
-    QSplitter*    serverSplitter       = nullptr;
-    QTextEdit*    serverTextComment    = nullptr;
-    MainUI*       mainUI               = nullptr;
+    QWidget*            serverTab          = nullptr;
+    QComboBox*          serverProjectCombo = nullptr;
+    QTableView*         serverTableWidget  = nullptr;
+    QStandardItemModel* serverTableModel   = nullptr;
+    QSplitter*          serverSplitter     = nullptr;
+    QTextEdit*          serverTextComment  = nullptr;
+    MainUI*             mainUI             = nullptr;
 
     QPushButton*  buttonClose = nullptr;
     QSpacerItem*  spacer1     = nullptr;

@@ -112,11 +112,11 @@ void ConsoleWidget::createUI()
 
     QString prompt = QString("%1 >").arg(agent->data.Name);
     CmdLabel = new QLabel(this );
-    CmdLabel->setProperty( "LabelStyle", "console" );
+    CmdLabel->setStyleSheet("padding: 4px; color: #BEBEBE; background-color: transparent;");
     CmdLabel->setText( prompt );
 
     InputLineEdit = new QLineEdit(this);
-    InputLineEdit->setProperty( "LineEditStyle", "console" );
+    InputLineEdit->setStyleSheet("background-color: #151515; color: #BEBEBE; border: 1px solid #2A2A2A; padding: 4px; border-radius: 4px;");
     InputLineEdit->setFont( FontManager::instance().getFont("Hack") );
 
     QString info = "";
@@ -127,12 +127,12 @@ void ConsoleWidget::createUI()
 
     InfoLabel = new QLabel(this);
     InfoLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
-    InfoLabel->setProperty( "LabelStyle", "console" );
+    InfoLabel->setStyleSheet("padding: 4px; color: #BEBEBE; background-color: transparent;");
     InfoLabel->setText ( info );
 
     OutputTextEdit = new TextEditConsole(this, GlobalClient->settings->data.ConsoleBufferSize, GlobalClient->settings->data.ConsoleNoWrap, GlobalClient->settings->data.ConsoleAutoScroll);
     OutputTextEdit->setReadOnly(true);
-    OutputTextEdit->setProperty( "TextEditStyle", "console" );
+    OutputTextEdit->setStyleSheet("background-color: #151515; color: #BEBEBE; border: 1px solid #2A2A2A; border-radius: 4px;");
     OutputTextEdit->setFont( FontManager::instance().getFont("Hack") );
 
     MainGridLayout = new QGridLayout(this );

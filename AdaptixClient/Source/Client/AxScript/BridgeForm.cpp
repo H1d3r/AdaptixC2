@@ -239,7 +239,7 @@ QObject* BridgeForm::create_list()
 
 QObject* BridgeForm::create_table(const QJSValue &headers)
 {
-    auto* table = new QTableWidget(getParentWidget());
+    auto* table = new QTableView(getParentWidget());
     auto* wrapper = new AxTableWidgetWrapper(headers, table, scriptEngine->engine(), this);
     scriptEngine->registerObject(wrapper);
     return wrapper;

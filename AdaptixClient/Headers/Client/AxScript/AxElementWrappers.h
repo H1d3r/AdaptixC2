@@ -511,15 +511,16 @@ public:
 class AxTableWidgetWrapper : public QObject, public AbstractAxElement, public AbstractAxVisualElement {
 Q_OBJECT
 public:
-    QTableWidget* table;
-    QJSEngine*    engine;
+    QTableView*         table;
+    QStandardItemModel* model;
+    QJSEngine*          engine;
 
-    explicit AxTableWidgetWrapper(const QJSValue &headers, QTableWidget* tableWidget, QJSEngine* jsEngine, QObject* parent = nullptr);
+    explicit AxTableWidgetWrapper(const QJSValue &headers, QTableView* tableView, QJSEngine* jsEngine, QObject* parent = nullptr);
 
     QVariant jsonMarshal() const override;
     void jsonUnmarshal(const QVariant& value) override;
 
-    QTableWidget* widget() const override;
+    QTableView* widget() const override;
     Q_INVOKABLE void setEnabled(const bool enable) const override { widget()->setEnabled(enable); }
     Q_INVOKABLE void setVisible(const bool enable) const override { widget()->setVisible(enable); }
     Q_INVOKABLE bool getEnabled() const override { return widget()->isEnabled(); }

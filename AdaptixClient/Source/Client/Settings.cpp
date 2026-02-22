@@ -29,7 +29,7 @@ DialogSettings* Settings::getDialogSettings()
 void Settings::SetDefault()
 {
     this->data.MainTheme    = "Adaptix_Dark";
-    this->data.FontFamily   = "Adaptix - DejaVu Sans Mono";
+    this->data.FontFamily   = "Adaptix - JetBrains Mono";
     this->data.FontSize     = 10;
     this->data.GraphVersion = "Version 1";
     this->data.RemoteTerminalBufferSize = 10000;

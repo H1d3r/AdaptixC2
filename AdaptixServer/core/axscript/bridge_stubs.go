@@ -2,6 +2,7 @@ package axscript
 
 import (
 	"path/filepath"
+	"strings"
 
 	"github.com/dop251/goja"
 )
@@ -188,6 +189,6 @@ func registerEventStubs(engine *ScriptEngine) {
 	rt.Set("event", eventObj)
 }
 
-func fileBasename(path string) string {
-	return filepath.Base(path)
+func fileBasename(p string) string {
+	return filepath.Base(filepath.Clean(strings.ReplaceAll(p, `\`, `/`)))
 }

@@ -24,8 +24,8 @@ SessionsTableWidget::SessionsTableWidget( AdaptixWidget* w ) : DockTab("Sessions
 
     this->createUI();
 
-    connect( tableView, &QTableWidget::doubleClicked,              this, &SessionsTableWidget::handleTableDoubleClicked );
-    connect( tableView, &QTableWidget::customContextMenuRequested, this, &SessionsTableWidget::handleSessionsTableMenu );
+    connect( tableView, &QTableView::doubleClicked,              this, &SessionsTableWidget::handleTableDoubleClicked );
+    connect( tableView, &QTableView::customContextMenuRequested, this, &SessionsTableWidget::handleSessionsTableMenu );
     connect(tableView->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this](const QItemSelection &selected, const QItemSelection &deselected){
         Q_UNUSED(selected)
         Q_UNUSED(deselected)

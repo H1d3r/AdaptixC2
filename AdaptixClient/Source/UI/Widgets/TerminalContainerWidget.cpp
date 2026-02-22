@@ -8,6 +8,7 @@
 #include <Client/Settings.h>
 #include <Client/AuthProfile.h>
 #include <Client/Requestor.h>
+#include <Utils/FontManager.h>
 #include <MainAdaptix.h>
 
 REGISTER_DOCK_WIDGET(TerminalContainerWidget, "Remote Terminal", false)
@@ -178,19 +179,7 @@ QTermWidget* TerminalTab::Konsole() { return this->termWidget; }
 
 void TerminalTab::SetFont()
 {
-    QFont font = QApplication::font();
-
-#ifdef Q_OS_MACOS
-    font.setFamily(QStringLiteral("Monaco"));
-#elif defined(Q_OS_WIN)
-    font.setFamily(QStringLiteral("Consolas"));
-#elif defined(Q_WS_QWS)
-    font.setFamily(QStringLiteral("fixed"));
-#else
-    font.setFamily(QStringLiteral("Monospace"));
-#endif
-
-    font.setPointSize(10);
+    QFont font = FontManager::instance().getFont("Hack", 10);
     termWidget->setTerminalFont(font);
 }
 

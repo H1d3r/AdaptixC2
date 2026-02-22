@@ -100,13 +100,10 @@ void DialogSettings::createUI()
 
     fontFamilyLabel = new QLabel("Font family: ", mainSettingWidget);
     fontFamilyCombo = new QComboBox(mainSettingWidget);
-    fontFamilyCombo->addItem("Adaptix - DejaVu Sans Mono");
-    fontFamilyCombo->addItem("Adaptix - Droid Sans Mono");
-    fontFamilyCombo->addItem("Adaptix - VT323");
-    fontFamilyCombo->addItem("Adaptix - Hack");
-    fontFamilyCombo->addItem("Adaptix - Anonymous Pro");
-    fontFamilyCombo->addItem("Adaptix - Space Mono");
     fontFamilyCombo->addItem("Adaptix - JetBrains Mono");
+    fontFamilyCombo->addItem("Adaptix - Hack");
+    fontFamilyCombo->addItem("Qlementine - Inter");
+    fontFamilyCombo->addItem("Qlementine - Roboto Mono");
 
     graphLabel1 = new QLabel("Session Graph version:", mainSettingWidget);
     graphCombo1 = new QComboBox(mainSettingWidget);
@@ -368,7 +365,10 @@ void DialogSettings::onApply() const
 {
     buttonApply->setEnabled(false);
 
-    if(settings->data.MainTheme != themeCombo->currentText()) {
+    bool themeChanged = settings->data.MainTheme != themeCombo->currentText();
+    bool fontChanged  = settings->data.FontSize != fontSizeSpin->value() || settings->data.FontFamily != fontFamilyCombo->currentText();
+
+    if(themeChanged) {
         settings->data.MainTheme = themeCombo->currentText();
         
         if (auto* style = settings->getMainAdaptix()->qlementineStyle) {
@@ -379,17 +379,13 @@ void DialogSettings::onApply() const
         TitleBarStyle::applyForTheme(settings->getMainAdaptix()->mainUI, settings->data.MainTheme);
     }
 
-    if(settings->data.FontSize != fontSizeSpin->value() || settings->data.FontFamily != fontFamilyCombo->currentText()) {
+    if(fontChanged) {
         settings->data.FontSize   = fontSizeSpin->value();
         settings->data.FontFamily = fontFamilyCombo->currentText();
+    }
 
-        QString appFontFamily = settings->data.FontFamily;
-        if (appFontFamily.startsWith("Adaptix"))
-            appFontFamily = appFontFamily.split("-")[1].trimmed();
-
-        auto appFont = QFont(appFontFamily);
-        appFont.setPointSize(settings->data.FontSize);
-        QApplication::setFont(appFont);
+    if(themeChanged || fontChanged) {
+        settings->getMainAdaptix()->ApplyApplicationFont();
     }
 
     if (settings->data.GraphVersion != graphCombo1->currentText()) {
