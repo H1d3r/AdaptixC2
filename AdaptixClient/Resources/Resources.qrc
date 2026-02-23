@@ -30,6 +30,23 @@
         <file alias="Dracula">themes/dracula.json</file>
     </qresource>
 
+    <qresource prefix="/console-themes">
+        <file alias="console_adaptix_dark.json">themes/console/console_adaptix_dark.json</file>
+        <file alias="console_adaptix_light.json">themes/console/console_adaptix_light.json</file>
+        <file alias="console_adaptix_dracula.json">themes/console/console_adaptix_dracula.json</file>
+        <file alias="console_dark_ice.json">themes/console/console_dark_ice.json</file>
+        <file alias="console_glass_morph.json">themes/console/console_glass_morph.json</file>
+        <file alias="console_hacker_tech.json">themes/console/console_hacker_tech.json</file>
+        <file alias="console_fallout.json">themes/console/console_fallout.json</file>
+        <file alias="console_light_arc.json">themes/console/console_light_arc.json</file>
+        <file alias="console_dark_classic.json">themes/console/console_dark_classic.json</file>
+        <file alias="console_dracula.json">themes/console/console_dracula.json</file>
+    </qresource>
+
+    <qresource prefix="/backgrounds">
+        <file alias="adaptix_background">backgrounds/adaptix_background.png</file>
+    </qresource>
+
     <qresource prefix="/icons">
         <file alias="logs">icons/news_64dp.png</file>
         <file alias="listeners">icons/headphones_64dp.png</file>

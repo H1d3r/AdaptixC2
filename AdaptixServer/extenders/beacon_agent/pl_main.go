@@ -1951,6 +1951,8 @@ func (ext *ExtenderAgent) ProcessData(agentData adaptix.AgentData, decryptedData
 						stringType = "Process"
 					} else if jobType == 0x4 {
 						stringType = "Shell"
+					} else if jobType == 0x5 {
+						stringType = "Async BOF"
 					}
 					Output += fmt.Sprintf("\n %-10v  %-5v  %-13s", jobId, pid, stringType)
 				}

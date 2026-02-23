@@ -24,11 +24,11 @@ ChatWidget::ChatWidget(AdaptixWidget* w) : DockTab("Chat", w->GetProfile()->GetP
 
     shortcutSearch = new QShortcut(QKeySequence("Ctrl+L"), chatTextEdit);
     shortcutSearch->setContext(Qt::WidgetShortcut);
-    connect(shortcutSearch, &QShortcut::activated, chatTextEdit, &QTextEdit::clear);
+    connect(shortcutSearch, &QShortcut::activated, chatTextEdit, &QPlainTextEdit::clear);
 
     shortcutSearch = new QShortcut(QKeySequence("Ctrl+A"), chatTextEdit);
     shortcutSearch->setContext(Qt::WidgetShortcut);
-    connect(shortcutSearch, &QShortcut::activated, chatTextEdit, &QTextEdit::selectAll);
+    connect(shortcutSearch, &QShortcut::activated, chatTextEdit, &QPlainTextEdit::selectAll);
 
     this->dockWidget->setWidget(this);
 }

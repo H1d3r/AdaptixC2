@@ -59,28 +59,6 @@ func NewTeamserver() *Teamserver {
 	return ts
 }
 
-func (ts *Teamserver) SetSettings(host string, port int, endpoint string, password string, cert string, key string, extenders []string) {
-	ts.Profile.Server = &profile.TsProfile{
-		Interface:  host,
-		Port:       port,
-		Endpoint:   endpoint,
-		Password:   password,
-		Cert:       cert,
-		Key:        key,
-		Extenders:  extenders,
-		ATokenLive: 12,
-		RTokenLive: 168,
-	}
-	ts.Profile.HttpServer = &profile.TsHttpServer{
-		Error: &profile.TsHttpError{
-			Status:      404,
-			Headers:     map[string]string{},
-			PagePath:    "",
-			PageContent: "",
-		},
-	}
-}
-
 func (ts *Teamserver) SetProfile(path string) error {
 	var (
 		err         error

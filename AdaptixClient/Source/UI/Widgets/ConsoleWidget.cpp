@@ -6,6 +6,7 @@
 #include <Client/Requestor.h>
 #include <Client/Settings.h>
 #include <Client/AuthProfile.h>
+#include <Client/ConsoleTheme.h>
 #include <Utils/FontManager.h>
 #include <MainAdaptix.h>
 
@@ -37,11 +38,11 @@ ConsoleWidget::ConsoleWidget( AdaptixWidget* w, Agent* a, Commander* c) : DockTa
 
     shortcutSearch = new QShortcut(QKeySequence("Ctrl+L"), OutputTextEdit);
     shortcutSearch->setContext(Qt::WidgetShortcut);
-    connect(shortcutSearch, &QShortcut::activated, OutputTextEdit, &QTextEdit::clear);
+    connect(shortcutSearch, &QShortcut::activated, OutputTextEdit, &QPlainTextEdit::clear);
 
     shortcutSearch = new QShortcut(QKeySequence("Ctrl+A"), OutputTextEdit);
     shortcutSearch->setContext(Qt::WidgetShortcut);
-    connect(shortcutSearch, &QShortcut::activated, OutputTextEdit, &QTextEdit::selectAll);
+    connect(shortcutSearch, &QShortcut::activated, OutputTextEdit, &QPlainTextEdit::selectAll);
 
     shortcutSearch = new QShortcut(QKeySequence("Ctrl+H"), OutputTextEdit);
     shortcutSearch->setContext(Qt::WidgetShortcut);
@@ -49,6 +50,10 @@ ConsoleWidget::ConsoleWidget( AdaptixWidget* w, Agent* a, Commander* c) : DockTa
 
     kphInputLineEdit = new KPH_ConsoleInput(InputLineEdit, OutputTextEdit, this);
     InputLineEdit->installEventFilter(kphInputLineEdit);
+
+    connect(&ConsoleThemeManager::instance(), &ConsoleThemeManager::themeChanged, this, &ConsoleWidget::applyTheme);
+    connect(OutputTextEdit, &TextEditConsole::ctx_bgToggled, this, [this](bool){ applyTheme(); });
+    applyTheme();
 
     this->dockWidget->setWidget(this);
 }
@@ -220,6 +225,8 @@ void ConsoleWidget::Clear() { OutputTextEdit->clear(); }
 
 void ConsoleWidget::ConsoleOutputMessage(const qint64 timestamp, const QString &taskId, const int type, const QString &message, const QString &text, const bool completed)
 {
+    const auto& theme = ConsoleThemeManager::instance().theme();
+
     QString promptTime = "";
     if (GlobalClient->settings->data.ConsoleTime)
         promptTime = UnixTimestampGlobalToStringLocal(timestamp);
@@ -227,14 +234,14 @@ void ConsoleWidget::ConsoleOutputMessage(const qint64 timestamp, const QString &
     if( !message.isEmpty() ) {
 
         if ( !promptTime.isEmpty() )
-            OutputTextEdit->appendColor("[" + promptTime + "] ", QColor(COLOR_SaturGray));
+            OutputTextEdit->appendFormatted("[" + promptTime + "] ", [&](QTextCharFormat& fmt){ fmt = theme.debug.toFormat(); });
 
         if (type == CONSOLE_OUT_INFO || type == CONSOLE_OUT_LOCAL_INFO)
-            OutputTextEdit->appendColor("[*] ", QColor(COLOR_BabyBlue));
+            OutputTextEdit->appendColor("[*] ", theme.statusInfo);
         else if (type == CONSOLE_OUT_SUCCESS || type == CONSOLE_OUT_LOCAL_SUCCESS)
-            OutputTextEdit->appendColor("[+] ", QColor(COLOR_Yellow));
+            OutputTextEdit->appendColor("[+] ", theme.statusSuccess);
         else if (type == CONSOLE_OUT_ERROR || type == CONSOLE_OUT_LOCAL_ERROR)
-            OutputTextEdit->appendColor("[-] ", QColor(COLOR_ChiliPepper));
+            OutputTextEdit->appendColor("[-] ", theme.statusError);
         else
             OutputTextEdit->appendPlain(" ");
 
@@ -252,12 +259,14 @@ void ConsoleWidget::ConsoleOutputMessage(const qint64 timestamp, const QString &
         if ( !taskId.isEmpty() )
             deleter = QString("\n+--- Task [%1] closed ----------------------------------------------------------+\n").arg(taskId);
 
-        OutputTextEdit->appendColor(deleter, QColor(COLOR_Gray));
+        OutputTextEdit->appendFormatted(deleter, [&](QTextCharFormat& fmt){ fmt = theme.debug.toFormat(); });
     }
 }
 
 void ConsoleWidget::ConsoleOutputPrompt(const qint64 timestamp, const QString &taskId, const QString &user, const QString &commandLine) const
 {
+    const auto& theme = ConsoleThemeManager::instance().theme();
+
     QString promptTime = "";
     if (GlobalClient->settings->data.ConsoleTime)
         promptTime = UnixTimestampGlobalToStringLocal(timestamp);
@@ -266,19 +275,27 @@ void ConsoleWidget::ConsoleOutputPrompt(const qint64 timestamp, const QString &t
         OutputTextEdit->appendPlain("\n");
 
         if ( !promptTime.isEmpty() )
-            OutputTextEdit->appendColor("[" + promptTime + "] ", QColor(COLOR_SaturGray));
+            OutputTextEdit->appendFormatted("[" + promptTime + "] ", [&](QTextCharFormat& fmt){ fmt = theme.debug.toFormat(); });
 
         if ( !user.isEmpty() )
-            OutputTextEdit->appendColor(user + " ", QColor(COLOR_Gray));
+            OutputTextEdit->appendFormatted(user + " ", [&](QTextCharFormat& fmt){ fmt = theme.operatorStyle.toFormat(); });
 
         if( !taskId.isEmpty() )
-            OutputTextEdit->appendColor("[" + taskId + "] ", QColor(COLOR_SaturGray));
+            OutputTextEdit->appendFormatted("[" + taskId + "] ", [&](QTextCharFormat& fmt){ fmt = theme.task.toFormat(); });
 
-        OutputTextEdit->appendColorUnderline(agent->data.Name, QColor(COLOR_Gray));
-        OutputTextEdit->appendColor(" > ", QColor(COLOR_Gray));
+        OutputTextEdit->appendFormatted(agent->data.Name, [&](QTextCharFormat& fmt){ fmt = theme.agent.toFormat(); });
+        OutputTextEdit->appendFormatted(" " + theme.input.symbol + " ", [&](QTextCharFormat& fmt){ fmt = theme.input.style.toFormat(); });
 
-        OutputTextEdit->appendBold(commandLine + "\n");
+        OutputTextEdit->appendFormatted(commandLine + "\n", [&](QTextCharFormat& fmt){ fmt = theme.command.toFormat(); });
     }
+}
+
+void ConsoleWidget::applyTheme()
+{
+    const auto& theme = ConsoleThemeManager::instance().theme();
+    const auto& bg = theme.background;
+    OutputTextEdit->setConsoleBackground(bg.color, bg.type == ConsoleBackground::Image ? bg.imagePath : QString(), bg.dimming);
+    OutputTextEdit->setStyleSheet(QString("QPlainTextEdit { color: %1; border: 1px solid #2A2A2A; border-radius: 4px; }").arg(theme.textColor.name()));
 }
 
 void ConsoleWidget::cleanupHooksOnError(const QString& hookId, const QString& handlerId, bool hasHook, bool hasHandler)

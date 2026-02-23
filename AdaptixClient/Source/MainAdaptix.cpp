@@ -6,6 +6,7 @@
 #include <Client/Settings.h>
 #include <Client/Storage.h>
 #include <Client/AuthProfile.h>
+#include <Client/ConsoleTheme.h>
 #include <Utils/FontManager.h>
 #include <Utils/TitleBarStyle.h>
 #include <MainAdaptix.h>
@@ -17,6 +18,8 @@ MainAdaptix::MainAdaptix()
 {
     storage  = new Storage();
     settings = new Settings(this);
+
+    ConsoleThemeManager::instance().loadTheme(settings->data.ConsoleTheme);
 
     this->SetApplicationTheme();
 
@@ -206,7 +209,8 @@ void MainAdaptix::SetApplicationTheme() const
     QGuiApplication::setWindowIcon( QIcon( ":/LogoLin" ) );
 
     auto* style = new oclero::qlementine::QlementineStyle(qApp);
-    QString themePath = QString(":/qlementine-themes/%1").arg(settings->data.MainTheme);
+    QString userPath = QDir(QDir::homePath()).filePath(".adaptix/themes/app/" + settings->data.MainTheme + ".json");
+    QString themePath = QFile::exists(userPath) ? userPath : QString(":/qlementine-themes/%1").arg(settings->data.MainTheme);
     style->setThemeJsonPath(themePath);
     const_cast<MainAdaptix*>(this)->qlementineStyle = style;
     QApplication::setStyle(style);

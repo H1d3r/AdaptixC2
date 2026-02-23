@@ -345,6 +345,8 @@ void Storage::SelectSettingsConsole(SettingsData* settingsData)
         settingsData->ConsoleBufferSize        = json["consoleBuffer"].toInt();
         settingsData->ConsoleNoWrap            = json["noWrap"].toBool();
         settingsData->ConsoleAutoScroll        = json["autoScroll"].toBool();
+        if (json.contains("consoleTheme"))
+            settingsData->ConsoleTheme = json["consoleTheme"].toString();
     }
 }
 
@@ -355,6 +357,7 @@ void Storage::UpdateSettingsConsole(const SettingsData &settingsData)
     json["consoleBuffer"]  = settingsData.ConsoleBufferSize;
     json["noWrap"]         = settingsData.ConsoleNoWrap;
     json["autoScroll"]     = settingsData.ConsoleAutoScroll;
+    json["consoleTheme"]   = settingsData.ConsoleTheme;
     QString data = QJsonDocument(json).toJson(QJsonDocument::Compact);
 
     QSqlQuery query;

@@ -6,6 +6,8 @@
 #include <QToolTip>
 #include <QHeaderView>
 #include <QStackedWidget>
+#include <QSyntaxHighlighter>
+#include <QPlainTextEdit>
 
 class QTimer;
 class QMutex;
@@ -427,33 +429,65 @@ protected:
 
 
 
-class TextEditConsole : public QTextEdit {
+struct FormatRange {
+    int start;
+    int length;
+    QTextCharFormat format;
+};
+
+class ConsoleBlockData : public QTextBlockUserData {
+public:
+    QVector<FormatRange> formats;
+};
+
+class ConsoleHighlighter : public QSyntaxHighlighter {
+public:
+    explicit ConsoleHighlighter(QTextDocument* parent);
+
+protected:
+    void highlightBlock(const QString& text) override;
+};
+
+class TextEditConsole : public QPlainTextEdit {
 Q_OBJECT
+    friend class ConsoleHighlighter;
+
     struct FormattedChunk {
         QString text;
         QTextCharFormat format;
     };
 
+    ConsoleHighlighter* highlighter = nullptr;
     QTextCursor cachedCursor;
     int  maxLines    = 50000;
     bool autoScroll  = false;
     bool noWrap      = true;
     bool syncMode    = false;
+    bool showBgImage = true;
     int appendCount  = 0;
 
-    QString pendingText;
-    QList<FormattedChunk> pendingFormatted;
+    QPixmap m_bgPixmap;
+    QColor  m_bgColor      = QColor("#151515");
+    int     m_bgDimming    = 70;
+    bool    m_hasBgImage   = false;
+
+    void updatePaletteBackground();
+
+    QList<FormattedChunk> pendingChunks;
     QTimer* batchTimer = nullptr;
     QMutex* batchMutex = nullptr;
     static constexpr int BATCH_INTERVAL_MS = 100;
     static constexpr int MAX_BATCH_SIZE = 64 * 1024;
+    int pendingSize = 0;
 
     void trimExcessLines();
     void createContextMenu(const QPoint &pos);
     void setBufferSize(int size);
+    void appendChunk(const QString& text, const QTextCharFormat& fmt);
+    void insertChunks(const QList<FormattedChunk>& chunks);
 
 private Q_SLOTS:
-    void flushPendingText();
+    void flushPending();
 
 public:
     explicit TextEditConsole(QWidget* parent = nullptr, int maxLines = 50000, bool noWrap = true, bool autoScroll = false);
@@ -475,9 +509,18 @@ public:
     void setSyncMode(bool enabled);
     void flushAll();
 
+    bool isShowBackgroundImage() const;
+    void setShowBackgroundImage(bool enabled);
+
+    void setConsoleBackground(const QColor& bgColor, const QString& imagePath = QString(), int dimming = 70);
+
+protected:
+    void paintEvent(QPaintEvent* event) override;
+
 Q_SIGNALS:
     void ctx_find();
     void ctx_history();
+    void ctx_bgToggled(bool showImage);
 };
 
 #endif

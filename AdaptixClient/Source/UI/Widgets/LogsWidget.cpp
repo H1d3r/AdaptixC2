@@ -2,6 +2,7 @@
 #include <UI/Widgets/AdaptixWidget.h>
 #include <UI/Widgets/DockWidgetRegister.h>
 #include <Client/AuthProfile.h>
+#include <Client/ConsoleTheme.h>
 #include <Utils/Convert.h>
 
 REGISTER_DOCK_WIDGET(LogsWidget, "Logs", true)
@@ -22,11 +23,15 @@ LogsWidget::LogsWidget(const AdaptixWidget* w) : DockTab("Logs", w->GetProfile()
 
     shortcutSearch = new QShortcut(QKeySequence("Ctrl+L"), logsConsoleTextEdit);
     shortcutSearch->setContext(Qt::WidgetShortcut);
-    connect(shortcutSearch, &QShortcut::activated, logsConsoleTextEdit, &QTextEdit::clear);
+    connect(shortcutSearch, &QShortcut::activated, logsConsoleTextEdit, &QPlainTextEdit::clear);
 
     shortcutSearch = new QShortcut(QKeySequence("Ctrl+A"), logsConsoleTextEdit);
     shortcutSearch->setContext(Qt::WidgetShortcut);
-    connect(shortcutSearch, &QShortcut::activated, logsConsoleTextEdit, &QTextEdit::selectAll);
+    connect(shortcutSearch, &QShortcut::activated, logsConsoleTextEdit, &QPlainTextEdit::selectAll);
+
+    connect(&ConsoleThemeManager::instance(), &ConsoleThemeManager::themeChanged, this, &LogsWidget::applyTheme);
+    connect(logsConsoleTextEdit, &TextEditConsole::ctx_bgToggled, this, [this](bool){ applyTheme(); });
+    applyTheme();
 
     this->dockWidget->setWidget(this);
 }
@@ -163,20 +168,30 @@ void LogsWidget::highlightCurrent() const
 
 void LogsWidget::AddLogs(const int type, const qint64 time, const QString &message)
 {
+    const auto& theme = ConsoleThemeManager::instance().theme();
+
     QString sTime = UnixTimestampGlobalToStringLocal(time);
     QString logTime = QString("[%1] -> ").arg(sTime);
-    logsConsoleTextEdit->appendPlain(logTime);
+    logsConsoleTextEdit->appendFormatted(logTime, [&](QTextCharFormat& fmt){ fmt = theme.logDebug.toFormat(); });
 
     QString logMsg = message + "\n";
 
-    if( type == EVENT_CLIENT_CONNECT )         logsConsoleTextEdit->appendColor(logMsg, QColor(COLOR_ConsoleWhite));
-    else if( type == EVENT_CLIENT_DISCONNECT ) logsConsoleTextEdit->appendColor(logMsg, QColor(COLOR_Gray));
-    else if( type == EVENT_LISTENER_START )    logsConsoleTextEdit->appendColor(logMsg, QColor(COLOR_BrightOrange));
-    else if( type == EVENT_LISTENER_STOP )     logsConsoleTextEdit->appendColor(logMsg, QColor(COLOR_BrightOrange));
-    else if( type == EVENT_AGENT_NEW )         logsConsoleTextEdit->appendColor(logMsg, QColor(COLOR_NeonGreen));
-    else if( type == EVENT_TUNNEL_START )      logsConsoleTextEdit->appendColor(logMsg, QColor(COLOR_PastelYellow));
-    else if( type == EVENT_TUNNEL_STOP )       logsConsoleTextEdit->appendColor(logMsg, QColor(COLOR_PastelYellow));
+    if( type == EVENT_CLIENT_CONNECT )         logsConsoleTextEdit->appendFormatted(logMsg, [&](QTextCharFormat& fmt){ fmt = theme.operatorConnect.toFormat(); });
+    else if( type == EVENT_CLIENT_DISCONNECT ) logsConsoleTextEdit->appendFormatted(logMsg, [&](QTextCharFormat& fmt){ fmt = theme.operatorDisconnect.toFormat(); });
+    else if( type == EVENT_LISTENER_START )    logsConsoleTextEdit->appendFormatted(logMsg, [&](QTextCharFormat& fmt){ fmt = theme.listenerStart.toFormat(); });
+    else if( type == EVENT_LISTENER_STOP )     logsConsoleTextEdit->appendFormatted(logMsg, [&](QTextCharFormat& fmt){ fmt = theme.listenerStop.toFormat(); });
+    else if( type == EVENT_AGENT_NEW )         logsConsoleTextEdit->appendFormatted(logMsg, [&](QTextCharFormat& fmt){ fmt = theme.agentNew.toFormat(); });
+    else if( type == EVENT_TUNNEL_START )      logsConsoleTextEdit->appendFormatted(logMsg, [&](QTextCharFormat& fmt){ fmt = theme.tunnel.toFormat(); });
+    else if( type == EVENT_TUNNEL_STOP )       logsConsoleTextEdit->appendFormatted(logMsg, [&](QTextCharFormat& fmt){ fmt = theme.tunnel.toFormat(); });
     else                                       logsConsoleTextEdit->appendPlain(logMsg);
+}
+
+void LogsWidget::applyTheme()
+{
+    const auto& theme = ConsoleThemeManager::instance().theme();
+    const auto& bg = theme.background;
+    logsConsoleTextEdit->setConsoleBackground(bg.color, bg.type == ConsoleBackground::Image ? bg.imagePath : QString(), bg.dimming);
+    logsConsoleTextEdit->setStyleSheet(QString("QPlainTextEdit { color: %1; border: 1px solid #2A2A2A; border-radius: 4px; }").arg(theme.textColor.name()));
 }
 
 void LogsWidget::Clear() const

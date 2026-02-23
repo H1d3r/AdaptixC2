@@ -25,6 +25,7 @@ Q_OBJECT
     QGridLayout* mainSettingLayout = nullptr;
     QLabel*      themeLabel        = nullptr;
     QComboBox*   themeCombo        = nullptr;
+    QPushButton* themeImportBtn    = nullptr;
     QLabel*      fontSizeLabel     = nullptr;
     QSpinBox*    fontSizeSpin      = nullptr;
     QLabel*      fontFamilyLabel   = nullptr;
@@ -41,6 +42,9 @@ Q_OBJECT
     QCheckBox*   consoleTimeCheckbox       = nullptr;
     QCheckBox*   consoleNoWrapCheckbox     = nullptr;
     QCheckBox*   consoleAutoScrollCheckbox = nullptr;
+    QLabel*      consoleThemeLabel         = nullptr;
+    QComboBox*   consoleThemeCombo         = nullptr;
+    QPushButton* consoleThemeImportBtn     = nullptr;
 
     QWidget*     sessionsWidget       = nullptr;
     QGridLayout* sessionsLayout       = nullptr;
@@ -70,6 +74,11 @@ Q_OBJECT
 
     void createUI();
     void loadSettings();
+    void refreshAppThemeCombo();
+    void refreshConsoleThemeCombo();
+
+    static QString userAppThemeDir();
+    static bool importAppTheme(const QString& filePath);
 
 protected:
     void showEvent(QShowEvent* event) override;

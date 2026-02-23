@@ -122,6 +122,7 @@ SET( HEADERS
         Headers/UI/Dialogs/DialogExtender.h
         Headers/Utils/CustomElements.h
         Headers/Client/Settings.h
+        Headers/Client/ConsoleTheme.h
         Headers/UI/Widgets/TunnelsWidget.h
         Headers/Utils/KeyPressHandler.h
         Headers/UI/Graph/SessionsGraph.h
@@ -212,6 +213,7 @@ add_executable(AdaptixClient
         Source/UI/Dialogs/DialogExtender.cpp
         Source/Utils/CustomElements.cpp
         Source/Client/Settings.cpp
+        Source/Client/ConsoleTheme.cpp
         Source/UI/Widgets/TunnelsWidget.cpp
         Source/UI/Graph/SessionsGraph.cpp
         Source/UI/Graph/GraphItem.cpp

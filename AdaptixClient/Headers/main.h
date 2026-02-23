@@ -203,6 +203,7 @@ typedef struct SettingsData {
     int  ConsoleBufferSize;
     bool ConsoleNoWrap;
     bool ConsoleAutoScroll;
+    QString ConsoleTheme;
 
     bool   SessionsTableColumns[16];
     int    SessionsColumnOrder[16];

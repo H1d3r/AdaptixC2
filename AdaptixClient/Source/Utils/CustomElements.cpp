@@ -4,6 +4,7 @@
 #include <QTextBlock>
 #include <QHBoxLayout>
 #include <QMouseEvent>
+#include <QPainter>
 #include <Utils/CustomElements.h>
 #include <Utils/NonBlockingDialogs.h>
 
@@ -486,14 +487,32 @@ SpinTable::SpinTable(int rows, int columns, QWidget* parent)
 
 
 
-TextEditConsole::TextEditConsole(QWidget* parent, int maxLines, bool noWrap, bool autoScroll) : QTextEdit(parent), cachedCursor(this->textCursor()), maxLines(maxLines), autoScroll(autoScroll), noWrap(noWrap)
+ConsoleHighlighter::ConsoleHighlighter(QTextDocument* parent) : QSyntaxHighlighter(parent) {}
+
+void ConsoleHighlighter::highlightBlock(const QString& text)
+{
+    Q_UNUSED(text)
+    auto* data = dynamic_cast<ConsoleBlockData*>(currentBlockUserData());
+    if (!data)
+        return;
+
+    for (const auto& range : data->formats)
+        setFormat(range.start, range.length, range.format);
+}
+
+
+
+TextEditConsole::TextEditConsole(QWidget* parent, int maxLines, bool noWrap, bool autoScroll)
+    : QPlainTextEdit(parent), cachedCursor(this->textCursor()), maxLines(maxLines), autoScroll(autoScroll), noWrap(noWrap)
 {
     cachedCursor.movePosition(QTextCursor::End);
 
     if (noWrap)
-        setLineWrapMode( QTextEdit::LineWrapMode::NoWrap );
+        setLineWrapMode(QPlainTextEdit::NoWrap);
     else
-        setWordWrapMode( QTextOption::WrapAnywhere );
+        setLineWrapMode(QPlainTextEdit::WidgetWidth);
+
+    highlighter = new ConsoleHighlighter(this->document());
 
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, &TextEditConsole::customContextMenuRequested, this, &TextEditConsole::createContextMenu);
@@ -502,7 +521,7 @@ TextEditConsole::TextEditConsole(QWidget* parent, int maxLines, bool noWrap, boo
     batchTimer = new QTimer(this);
     batchTimer->setSingleShot(true);
     batchTimer->setInterval(BATCH_INTERVAL_MS);
-    connect(batchTimer, &QTimer::timeout, this, &TextEditConsole::flushPendingText);
+    connect(batchTimer, &QTimer::timeout, this, &TextEditConsole::flushPending);
 }
 
 void TextEditConsole::createContextMenu(const QPoint &pos) {
@@ -538,18 +557,24 @@ void TextEditConsole::createContextMenu(const QPoint &pos) {
     noWrapAction->setChecked(noWrap);
     connect(noWrapAction, &QAction::toggled, this, [this](bool checked) {
         noWrap = checked;
-        if (checked) {
-            setLineWrapMode(QTextEdit::NoWrap);
-        } else {
-            setLineWrapMode(QTextEdit::WidgetWidth);
-            setWordWrapMode(QTextOption::WrapAnywhere);
-        }
+        if (checked)
+            setLineWrapMode(QPlainTextEdit::NoWrap);
+        else
+            setLineWrapMode(QPlainTextEdit::WidgetWidth);
     });
     
     QAction *autoScrollAction = menu->addAction("Auto scroll");
     autoScrollAction->setCheckable(true);
     autoScrollAction->setChecked(autoScroll);
     connect(autoScrollAction, &QAction::toggled, this, &TextEditConsole::setAutoScrollEnabled);
+
+    QAction *bgImageAction = menu->addAction("Show background image");
+    bgImageAction->setCheckable(true);
+    bgImageAction->setChecked(showBgImage);
+    connect(bgImageAction, &QAction::toggled, this, [this](bool checked) {
+        showBgImage = checked;
+        Q_EMIT ctx_bgToggled(checked);
+    });
     
     menu->exec(mapToGlobal(pos));
     delete menu;
@@ -578,89 +603,136 @@ bool TextEditConsole::isAutoScrollEnabled() const {
     return autoScroll;
 }
 
+bool TextEditConsole::isShowBackgroundImage() const {
+    return showBgImage;
+}
+
+void TextEditConsole::setShowBackgroundImage(const bool enabled) {
+    showBgImage = enabled;
+    Q_EMIT ctx_bgToggled(enabled);
+}
+
+void TextEditConsole::setConsoleBackground(const QColor& bgColor, const QString& imagePath, int dimming)
+{
+    m_bgColor = bgColor;
+    m_bgDimming = qBound(0, dimming, 100);
+
+    if (!imagePath.isEmpty()) {
+        m_bgPixmap = QPixmap(imagePath);
+        m_hasBgImage = !m_bgPixmap.isNull();
+    } else {
+        m_bgPixmap = QPixmap();
+        m_hasBgImage = false;
+    }
+
+    updatePaletteBackground();
+    viewport()->update();
+}
+
+void TextEditConsole::updatePaletteBackground()
+{
+    QPalette p = palette();
+    if (showBgImage && m_hasBgImage)
+        p.setColor(QPalette::Base, Qt::transparent);
+    else
+        p.setColor(QPalette::Base, m_bgColor);
+    setPalette(p);
+}
+
+void TextEditConsole::paintEvent(QPaintEvent* event)
+{
+    if (showBgImage && m_hasBgImage) {
+        QPainter painter(viewport());
+        QRect rect = viewport()->rect();
+
+        painter.fillRect(rect, m_bgColor);
+
+        QPixmap scaled = m_bgPixmap.scaled(rect.size(), Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
+        int x = (rect.width()  - scaled.width())  / 2;
+        int y = (rect.height() - scaled.height()) / 2;
+        painter.drawPixmap(x, y, scaled);
+
+        QColor overlay = m_bgColor;
+        overlay.setAlpha(qRound(m_bgDimming * 255.0 / 100.0));
+        painter.fillRect(rect, overlay);
+    }
+    QPlainTextEdit::paintEvent(event);
+}
+
 bool TextEditConsole::isNoWrapEnabled() const {
     return noWrap;
 }
 
-void TextEditConsole::appendPlain(const QString& text)
+void TextEditConsole::appendChunk(const QString& text, const QTextCharFormat& fmt)
 {
     QMutexLocker locker(batchMutex);
-    
-    if (syncMode) {
-        static QTextCharFormat plainFormat;
-        if (!pendingFormatted.isEmpty() && pendingFormatted.last().format == plainFormat) {
-            pendingFormatted.last().text += text;
-        } else {
-            pendingFormatted.append({text, plainFormat});
-        }
-        return;
+
+    if (!pendingChunks.isEmpty() && pendingChunks.last().format == fmt) {
+        pendingChunks.last().text += text;
+    } else {
+        pendingChunks.append({text, fmt});
     }
+    pendingSize += text.size();
 
-    pendingText += text;
+    if (syncMode)
+        return;
 
-    if (pendingText.size() >= MAX_BATCH_SIZE) {
+    if (pendingSize >= MAX_BATCH_SIZE) {
         locker.unlock();
-        flushPendingText();
+        flushPending();
     } else if (!batchTimer->isActive()) {
         batchTimer->start();
     }
 }
 
-void TextEditConsole::flushPendingText()
+void TextEditConsole::insertChunks(const QList<FormattedChunk>& chunks)
 {
-    QMutexLocker locker(batchMutex);
-    if (pendingText.isEmpty())
-        return;
+    bool atBottom = verticalScrollBar()->value() >= verticalScrollBar()->maximum() - 4;
 
-    QString textToAppend = pendingText;
-    pendingText.clear();
-    locker.unlock();
-
-    bool atBottom = verticalScrollBar()->value() == verticalScrollBar()->maximum();
+    highlighter->blockSignals(true);
 
     cachedCursor.movePosition(QTextCursor::End);
-    cachedCursor.insertText(textToAppend, QTextCharFormat());
+    QTextBlock lastBlock = document()->lastBlock();
 
-    auto doc = this->document();
-    int currentLines = doc->blockCount();
-    int trimThreshold = static_cast<int>(maxLines * 1.5);
+    for (const auto& chunk : chunks) {
+        if (chunk.text.isEmpty())
+            continue;
 
-    if (currentLines > trimThreshold) {
-        trimExcessLines();
-        appendCount = 0;
-    } else {
-        appendCount++;
-        if (appendCount >= 200 && currentLines > static_cast<int>(maxLines * 0.9)) {
-            trimExcessLines();
-            appendCount = 0;
+        bool hasFormat = chunk.format != QTextCharFormat();
+
+        QString normalizedText = chunk.text;
+        normalizedText.replace("\r\n", "\n");
+        normalizedText.remove('\r');
+
+        QStringList lines = normalizedText.split('\n');
+
+        for (int i = 0; i < lines.size(); ++i) {
+            const QString& line = lines[i];
+
+            if (!line.isEmpty()) {
+                QTextBlock block = cachedCursor.block();
+                int posInBlock = cachedCursor.positionInBlock();
+
+                cachedCursor.insertText(line);
+
+                if (hasFormat) {
+                    auto* data = dynamic_cast<ConsoleBlockData*>(block.userData());
+                    if (!data) {
+                        data = new ConsoleBlockData();
+                        block.setUserData(data);
+                    }
+                    data->formats.append({posInBlock, static_cast<int>(line.length()), chunk.format});
+                }
+            }
+
+            if (i < lines.size() - 1) {
+                cachedCursor.insertBlock();
+            }
         }
     }
 
-    if (autoScroll || atBottom)
-        verticalScrollBar()->setValue(verticalScrollBar()->maximum());
-}
-
-void TextEditConsole::appendFormatted(const QString& text, const std::function<void(QTextCharFormat&)> &styleFn)
-{
-    QTextCharFormat fmt;
-    styleFn(fmt);
-
-    if (syncMode) {
-        QMutexLocker locker(batchMutex);
-        if (!pendingFormatted.isEmpty() && pendingFormatted.last().format == fmt) {
-            pendingFormatted.last().text += text;
-        } else {
-            pendingFormatted.append({text, fmt});
-        }
-        return;
-    }
-
-    flushPendingText();
-
-    bool atBottom = verticalScrollBar()->value() == verticalScrollBar()->maximum();
-
-    cachedCursor.movePosition(QTextCursor::End);
-    cachedCursor.insertText(text, fmt);
+    highlighter->blockSignals(false);
+    highlighter->rehighlight();
 
     appendCount++;
     auto doc = this->document();
@@ -679,6 +751,32 @@ void TextEditConsole::appendFormatted(const QString& text, const std::function<v
         verticalScrollBar()->setValue(verticalScrollBar()->maximum());
 }
 
+void TextEditConsole::appendPlain(const QString& text)
+{
+    appendChunk(text, QTextCharFormat());
+}
+
+void TextEditConsole::flushPending()
+{
+    QMutexLocker locker(batchMutex);
+    if (pendingChunks.isEmpty())
+        return;
+
+    QList<FormattedChunk> chunks = std::move(pendingChunks);
+    pendingChunks.clear();
+    pendingSize = 0;
+    locker.unlock();
+
+    insertChunks(chunks);
+}
+
+void TextEditConsole::appendFormatted(const QString& text, const std::function<void(QTextCharFormat&)> &styleFn)
+{
+    QTextCharFormat fmt;
+    styleFn(fmt);
+    appendChunk(text, fmt);
+}
+
 void TextEditConsole::setSyncMode(bool enabled)
 {
     syncMode = enabled;
@@ -689,37 +787,18 @@ void TextEditConsole::setSyncMode(bool enabled)
 void TextEditConsole::flushAll()
 {
     QMutexLocker locker(batchMutex);
-    
-    if (!pendingText.isEmpty()) {
-        pendingFormatted.append({pendingText, QTextCharFormat()});
-        pendingText.clear();
-    }
-    
-    if (pendingFormatted.isEmpty())
-        return;
 
-    QList<FormattedChunk> chunks = std::move(pendingFormatted);
-    pendingFormatted.clear();
+    if (pendingChunks.isEmpty()) {
+        pendingSize = 0;
+        return;
+    }
+
+    QList<FormattedChunk> chunks = std::move(pendingChunks);
+    pendingChunks.clear();
+    pendingSize = 0;
     locker.unlock();
 
-    bool atBottom = verticalScrollBar()->value() == verticalScrollBar()->maximum();
-    cachedCursor.movePosition(QTextCursor::End);
-
-    int count = 0;
-    for (const auto &chunk : chunks) {
-        cachedCursor.insertText(chunk.text, chunk.format);
-        if (++count % 50 == 0)
-            QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-    }
-
-    auto doc = this->document();
-    int currentLines = doc->blockCount();
-    if (currentLines > maxLines * 1.5) {
-        trimExcessLines();
-    }
-
-    if (autoScroll || atBottom)
-        verticalScrollBar()->setValue(verticalScrollBar()->maximum());
+    insertChunks(chunks);
 }
 
 void TextEditConsole::appendColor(const QString& text, const QColor color) {
@@ -754,40 +833,13 @@ void TextEditConsole::trimExcessLines() {
     if (blockCount <= maxLines)
         return;
 
-    int linesToRemove = blockCount - maxLines;
-
     QTextCursor c(doc);
     c.movePosition(QTextCursor::Start);
 
-    QTextBlock keepFromBlock = doc->findBlockByNumber(maxLines);
+    QTextBlock keepFromBlock = doc->findBlockByNumber(blockCount - maxLines);
     if (keepFromBlock.isValid()) {
         c.movePosition(QTextCursor::Start);
         c.setPosition(keepFromBlock.position(), QTextCursor::KeepAnchor);
         c.removeSelectedText();
-
-        doc = this->document();
-        if (doc->blockCount() > maxLines) {
-            static int recursionDepth = 0;
-            if (recursionDepth < 3) {
-                recursionDepth++;
-                trimExcessLines();
-                recursionDepth--;
-            }
-        }
-    } else {
-        while (doc->blockCount() > maxLines && linesToRemove > 0) {
-            QTextBlock block = doc->firstBlock();
-            if (!block.isValid())
-                break;
-
-            QTextCursor c(block);
-            c.select(QTextCursor::BlockUnderCursor);
-            c.removeSelectedText();
-            c.deleteChar();
-            linesToRemove--;
-
-            if (linesToRemove > 5000)
-                break;
-        }
     }
 }
