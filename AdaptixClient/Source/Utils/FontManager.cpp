@@ -46,6 +46,20 @@ void FontManager::loadApplicationFonts()
             }
         }
     }
+
+    for (auto it = m_loadedFonts.begin(); it != m_loadedFonts.end(); ++it) {
+        QFont testFont(it.value());
+        QFontInfo fontInfo(testFont);
+        if (fontInfo.family() != it.value() && !fontInfo.family().startsWith(it.value())) {
+            QStringList allFamilies = QFontDatabase::families();
+            for (const QString& family : allFamilies) {
+                if (family.contains(it.key(), Qt::CaseInsensitive) || family.contains(it.value(), Qt::CaseInsensitive)) {
+                    it.value() = family;
+                    break;
+                }
+            }
+        }
+    }
 }
 
 QFont FontManager::getFont(const QString& fontName, int pointSize)
@@ -73,6 +87,17 @@ bool FontManager::isFontAvailable(const QString& fontName)
         initialize();
 
     return m_loadedFonts.contains(fontName);
+}
+
+QString FontManager::resolveFamily(const QString& fontName)
+{
+    if (!m_initialized)
+        initialize();
+
+    if (m_loadedFonts.contains(fontName))
+        return m_loadedFonts[fontName];
+
+    return fontName;
 }
 
 QFont FontManager::getDefaultMonospaceFont(int pointSize)

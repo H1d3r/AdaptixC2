@@ -11,6 +11,7 @@
 #include <Utils/TitleBarStyle.h>
 #include <MainAdaptix.h>
 
+#include <QFontInfo>
 #include <kddockwidgets/Config.h>
 #include <oclero/qlementine.hpp>
 
@@ -237,6 +238,14 @@ void MainAdaptix::ApplyApplicationFont() const
     QString appFontFamily = settings->data.FontFamily;
     if (appFontFamily.contains(" - "))
         appFontFamily = appFontFamily.split("-")[1].trimmed();
+
+    appFontFamily = FontManager::instance().resolveFamily(appFontFamily);
+
+    QFont testFont(appFontFamily);
+    QFontInfo testInfo(testFont);
+    if (testInfo.family() != appFontFamily && !testInfo.family().startsWith(appFontFamily)) {
+        appFontFamily = FontManager::instance().resolveFamily("JetBrains Mono");
+    }
 
     int appFontSize = settings->data.FontSize;
 

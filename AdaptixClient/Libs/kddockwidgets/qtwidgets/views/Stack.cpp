@@ -30,6 +30,7 @@
 #include <QTabBar>
 #include <QHBoxLayout>
 #include <QAbstractButton>
+#include <QToolButton>
 #include <QMenu>
 #include <QSizePolicy>
 #include <QTimer>
@@ -146,7 +147,7 @@ void Stack::setupTabBarButtons()
     d->buttonsWidget->setAttribute(Qt::WA_TransparentForMouseEvents, false);
 
     d->buttonsLayout = new QHBoxLayout(d->buttonsWidget);
-    d->buttonsLayout->setContentsMargins(0, 0, 4, 0);
+    d->buttonsLayout->setContentsMargins(2, 0, 4, 0);
     d->buttonsLayout->setSpacing(2);
     d->buttonsLayout->setAlignment(Qt::AlignVCenter);
 
@@ -180,7 +181,10 @@ void Stack::setupTabBarButtons()
 
     if (auto group = m_stack->group()) {
         d->titleBarVisibilityConnection = group->dptr()->actualTitleBarChanged.connect([this] {
-            QTimer::singleShot(0, this, &Stack::updateTabBarButtons);
+            QTimer::singleShot(0, this, [this] {
+                updateTabBarButtons();
+                updateButtonsPosition();
+            });
         });
     }
 
@@ -208,17 +212,22 @@ void Stack::updateTabBarButtons()
     }
 
     const bool hideTitleBarFlag = Config::self().flags() & Config::Flag_HideTitleBarWhenTabsVisible;
-    const bool titleBarShouldBeHidden = hideTitleBarFlag && group->hasTabsVisible();
+    const bool showButtons = hideTitleBarFlag && group->hasTabsVisible();
 
-    d->buttonsWidget->setVisible(titleBarShouldBeHidden);
+    d->buttonsWidget->setVisible(showButtons);
 
-    if (d->closeButton) {
-        const bool enabled = !group->anyNonClosable();
-        const bool visible = enabled || !m_stack->buttonHidesIfDisabled(TitleBarButtonType::Close);
-        d->closeButton->setEnabled(enabled);
-        d->closeButton->setVisible(visible);
+    if (showButtons) {
+        d->floatButton->setVisible(true);
+
+        if (d->closeButton) {
+            const bool enabled = !group->anyNonClosable();
+            const bool visible = enabled || !m_stack->buttonHidesIfDisabled(TitleBarButtonType::Close);
+            d->closeButton->setEnabled(enabled);
+            d->closeButton->setVisible(visible);
+        }
     }
 
+    updateButtonsPosition();
     d->updatingButtons = false;
 }
 
@@ -229,7 +238,7 @@ void Stack::updateMargins()
 
 void Stack::updateButtonsPosition()
 {
-    if (!d->buttonsWidget)
+    if (!d->buttonsWidget || !d->buttonsWidget->isVisible())
         return;
 
     QTabBar *tb = QTabWidget::tabBar();
@@ -240,15 +249,29 @@ void Stack::updateButtonsPosition()
     if (tabBarHeight <= 0)
         return;
 
+    const int btnSize = qMax(16, tabBarHeight - 6);
+    if (d->floatButton && d->floatButton->isVisible())
+        d->floatButton->setFixedSize(btnSize, btnSize);
+    if (d->closeButton && d->closeButton->isVisible())
+        d->closeButton->setFixedSize(btnSize, btnSize);
+
     d->buttonsWidget->adjustSize();
-    const QSize btnSize = d->buttonsWidget->sizeHint();
-    const int w = btnSize.width();
-    const int h = qMin(btnSize.height(), tabBarHeight);
+    const QSize widgetSize = d->buttonsWidget->sizeHint();
+    const int w = widgetSize.width();
+    const int h = qMin(widgetSize.height(), tabBarHeight);
+
     const int x = width() - w;
     const int y = tb->y() + (tabBarHeight - h) / 2;
 
     d->buttonsWidget->setGeometry(x, y, w, h);
     d->buttonsWidget->raise();
+
+    QRect tbRect = tb->geometry();
+    const int maxRight = x - 2;
+    if (tbRect.right() > maxRight) {
+        tbRect.setRight(maxRight);
+        tb->setGeometry(tbRect);
+    }
 }
 
 void Stack::resizeEvent(QResizeEvent *event)

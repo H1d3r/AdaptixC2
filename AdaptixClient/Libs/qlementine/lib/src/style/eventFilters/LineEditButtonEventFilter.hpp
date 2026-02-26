@@ -112,7 +112,7 @@ protected:
 
         const auto pixmap = getPixmap(_button->icon(), theme.iconSize, mouse, CheckState::NotChecked, _button);
         const auto autoIconColor = _style ? _style->autoIconColor(_button) : AutoIconColor::None;
-        const auto& colorizedPixmap = _style->getColorizedPixmap(pixmap, autoIconColor, currentFgColor, currentFgColor);
+        const auto& colorizedPixmap = _style ? _style->getColorizedPixmap(pixmap, autoIconColor, currentFgColor, currentFgColor) : pixmap;
         const auto pixmapX = circleRect.x() + (circleRect.width() - theme.iconSize.width()) / 2;
         const auto pixmapY = circleRect.y() + (circleRect.height() - theme.iconSize.height()) / 2;
         const auto pixmapRect = QRect{ { pixmapX, pixmapY }, theme.iconSize };

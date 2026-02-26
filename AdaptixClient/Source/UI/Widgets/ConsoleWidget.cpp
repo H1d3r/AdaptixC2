@@ -294,7 +294,9 @@ void ConsoleWidget::applyTheme()
 {
     const auto& theme = ConsoleThemeManager::instance().theme();
     const auto& bg = theme.background;
-    OutputTextEdit->setConsoleBackground(bg.color, bg.type == ConsoleBackground::Image ? bg.imagePath : QString(), bg.dimming);
+    bool showBg = GlobalClient->settings->data.ConsoleShowBackground;
+    QString imagePath = (showBg && bg.type == ConsoleBackground::Image) ? bg.imagePath : QString();
+    OutputTextEdit->setConsoleBackground(bg.color, imagePath, bg.dimming);
     OutputTextEdit->setStyleSheet(QString("QPlainTextEdit { color: %1; border: 1px solid #2A2A2A; border-radius: 4px; }").arg(theme.textColor.name()));
 }
 

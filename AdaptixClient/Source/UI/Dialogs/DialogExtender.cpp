@@ -82,34 +82,33 @@ void DialogExtender::createUI()
     splitter->setSizes(QList<int>({500, 140}));
 
     /// Server Scripts
-    serverProjectCombo = new QComboBox(this);
+    serverTab = new QWidget(this);
+
+    serverProjectCombo = new QComboBox(serverTab);
     serverProjectCombo->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
-    serverTableModel = new QStandardItemModel(this);
-    serverTableWidget = createScriptTable(this, serverTableModel, 3);
+    serverTableModel = new QStandardItemModel(serverTab);
+    serverTableWidget = createScriptTable(serverTab, serverTableModel, 3);
     serverTableModel->setHorizontalHeaderItem(0, new QStandardItem("Name"));
     serverTableModel->setHorizontalHeaderItem(1, new QStandardItem("Status"));
     serverTableModel->setHorizontalHeaderItem(2, new QStandardItem("Description"));
     serverTableWidget->hideColumn(2);
 
-    serverTextComment = new QTextEdit(this);
+    serverTextComment = new QTextEdit(serverTab);
     serverTextComment->setReadOnly(true);
 
-    serverSplitter = new QSplitter(Qt::Vertical, this);
+    serverSplitter = new QSplitter(Qt::Vertical, serverTab);
     serverSplitter->setContentsMargins(0, 0, 0, 0);
     serverSplitter->setHandleWidth(3);
     serverSplitter->addWidget(serverTableWidget);
     serverSplitter->addWidget(serverTextComment);
     serverSplitter->setSizes(QList<int>({500, 140}));
 
-    auto* serverLayout = new QVBoxLayout();
+    auto* serverLayout = new QVBoxLayout(serverTab);
     serverLayout->setContentsMargins(4, 4, 4, 4);
     serverLayout->setSpacing(4);
     serverLayout->addWidget(serverProjectCombo);
     serverLayout->addWidget(serverSplitter, 1);
-
-    serverTab = new QWidget(this);
-    serverTab->setLayout(serverLayout);
 
     tabWidget = new QTabWidget(this);
     tabWidget->addTab(splitter, "Local Scripts");

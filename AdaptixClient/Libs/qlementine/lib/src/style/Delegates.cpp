@@ -23,7 +23,7 @@ void ComboBoxDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, const
 
   const auto viewIsTreeView = qobject_cast<const QTreeView*>(opt.widget);
   const auto isSeparator = idx.data(Qt::AccessibleDescriptionRole).toString() == QLatin1String("separator");
-  const auto contentMargin = _qlementineStyle->pixelMetric(QStyle::PM_MenuHMargin);
+  const auto contentMargin = _qlementineStyle ? _qlementineStyle->pixelMetric(QStyle::PM_MenuHMargin) : 0;
   const auto contentRect = opt.rect.marginsRemoved({ contentMargin, 0, contentMargin, 0 });
 
   if (isSeparator) {
@@ -51,7 +51,7 @@ void ComboBoxDelegate::paint(QPainter* p, const QStyleOptionViewItem& opt, const
     const auto hPadding = theme.spacing;
     const auto& bgColor =
       _qlementineStyle ? _qlementineStyle->menuItemBackgroundColor(mouse) : Theme().primaryColorTransparent;
-    const auto radius = _qlementineStyle->theme().borderRadius - contentMargin / 2;
+    const auto radius = (_qlementineStyle ? _qlementineStyle->theme().borderRadius : theme.borderRadius) - contentMargin / 2;
     p->setRenderHint(QPainter::Antialiasing, true);
     p->setPen(Qt::NoPen);
     p->setBrush(bgColor);
@@ -159,7 +159,7 @@ QSize ComboBoxDelegate::sizeHint(const QStyleOptionViewItem& opt, const QModelIn
     const auto h = theme.spacing + theme.borderWidth;
     return QSize{ h, h };
   } else {
-    const auto contentMargin = _qlementineStyle->pixelMetric(QStyle::PM_MenuHMargin);
+    const auto contentMargin = _qlementineStyle ? _qlementineStyle->pixelMetric(QStyle::PM_MenuHMargin) : 0;
     const auto hPadding = theme.spacing;
     const auto vPadding = theme.spacing;
     const auto iconSize = theme.iconSize;

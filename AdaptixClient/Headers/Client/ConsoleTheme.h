@@ -69,7 +69,6 @@ struct ConsoleThemeData
 class ConsoleThemeManager : public QObject
 {
 Q_OBJECT
-
     ConsoleThemeManager() = default;
     QString resolveThemePath(const QString& name) const;
 

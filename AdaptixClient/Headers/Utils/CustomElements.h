@@ -16,6 +16,22 @@ class QMutex;
 class VerticalTabBar : public QWidget
 {
 Q_OBJECT
+
+    struct TabInfo { QString text; };
+    QVector<TabInfo> m_tabs;
+    int m_currentIndex = -1;
+    int m_hoveredIndex = -1;
+    int m_hoveredCloseButton = -1;
+    bool m_closable = false;
+    int m_tabHeight = 28;
+    int m_tabWidth = 32;
+    bool m_showAddButton = false;
+    bool m_addButtonHovered = false;
+
+    int tabAt(const QPoint &pos) const;
+    QRect closeButtonRect(int index) const;
+    QRect addButtonRect() const;
+
 public:
     explicit VerticalTabBar(QWidget *parent = nullptr);
 
@@ -39,22 +55,6 @@ protected:
     void mouseMoveEvent(QMouseEvent *event) override;
     void leaveEvent(QEvent *event) override;
     QSize sizeHint() const override;
-
-private:
-    struct TabInfo { QString text; };
-    QVector<TabInfo> m_tabs;
-    int m_currentIndex = -1;
-    int m_hoveredIndex = -1;
-    int m_hoveredCloseButton = -1;
-    bool m_closable = false;
-    int m_tabHeight = 28;
-    int m_tabWidth = 32;
-    bool m_showAddButton = false;
-    bool m_addButtonHovered = false;
-
-    int tabAt(const QPoint &pos) const;
-    QRect closeButtonRect(int index) const;
-    QRect addButtonRect() const;
 };
 
 class VerticalTabWidget : public QWidget
@@ -176,9 +176,9 @@ public:
 
 class PaddingDelegate : public QStyledItemDelegate {
 public:
-    explicit PaddingDelegate(QObject* parent = nullptr)
+    explicit PaddingDelegate(QObject* parent = nullptr) 
         : QStyledItemDelegate(parent), m_padding(4) {}
-    explicit PaddingDelegate(int padding, QObject* parent = nullptr)
+    explicit PaddingDelegate(int padding, QObject* parent = nullptr) 
         : QStyledItemDelegate(parent), m_padding(padding) {}
 
     QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override {
@@ -202,7 +202,7 @@ public:
 
         if (!opt.icon.isNull()) {
             QRect iconRect = style->subElementRect(QStyle::SE_ItemViewItemDecoration, &opt, widget);
-            opt.icon.paint(painter, iconRect, opt.decorationAlignment,
+            opt.icon.paint(painter, iconRect, opt.decorationAlignment, 
                           opt.state & QStyle::State_Enabled ? QIcon::Normal : QIcon::Disabled,
                           opt.state & QStyle::State_Open ? QIcon::On : QIcon::Off);
         }
@@ -211,7 +211,7 @@ public:
             QRect textRect = style->subElementRect(QStyle::SE_ItemViewItemText, &opt, widget);
             textRect.adjust(m_padding, 0, -m_padding, 0);
             painter->save();
-
+            
             if (opt.state & QStyle::State_Selected)
                 painter->setPen(opt.palette.highlightedText().color());
             else {
@@ -221,7 +221,7 @@ public:
                 else
                     painter->setPen(opt.palette.text().color());
             }
-
+            
             painter->setFont(opt.font);
             QString elidedText = opt.fontMetrics.elidedText(opt.text, Qt::ElideRight, textRect.width());
             painter->drawText(textRect, Qt::AlignVCenter | int(opt.displayAlignment & Qt::AlignHorizontal_Mask), elidedText);

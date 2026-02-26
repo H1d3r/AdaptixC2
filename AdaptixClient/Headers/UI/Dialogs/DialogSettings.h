@@ -39,9 +39,10 @@ Q_OBJECT
     QGridLayout* consoleGroupLayout        = nullptr;
     QLabel*      consoleSizeLabel          = nullptr;
     QSpinBox*    consoleSizeSpin           = nullptr;
-    QCheckBox*   consoleTimeCheckbox       = nullptr;
-    QCheckBox*   consoleNoWrapCheckbox     = nullptr;
-    QCheckBox*   consoleAutoScrollCheckbox = nullptr;
+    QCheckBox*   consoleTimeCheckbox           = nullptr;
+    QCheckBox*   consoleNoWrapCheckbox         = nullptr;
+    QCheckBox*   consoleAutoScrollCheckbox     = nullptr;
+    QCheckBox*   consoleShowBackgroundCheckbox = nullptr;
     QLabel*      consoleThemeLabel         = nullptr;
     QComboBox*   consoleThemeCombo         = nullptr;
     QPushButton* consoleThemeImportBtn     = nullptr;

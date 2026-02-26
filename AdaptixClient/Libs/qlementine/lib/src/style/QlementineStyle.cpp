@@ -31,6 +31,7 @@
 #include <QToolTip>
 #include <QPixmapCache>
 #include <QApplication>
+#include <QGuiApplication>
 #include <QMenuBar>
 #include <QToolBar>
 #include <QTableView>
@@ -180,7 +181,7 @@ struct QlementineStyleImpl {
 
   /// Returns true if the QTabBar will show its scroll buttons.
   static bool areTabBarScrollButtonsVisible(const QTabBar* tabBar) {
-    if (!tabBar->usesScrollButtons())
+    if (!tabBar || !tabBar->usesScrollButtons())
       return false;
 
     // Ignore right button They go in pair: if one is visible, the other is too.
@@ -565,14 +566,14 @@ void QlementineStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption* opt
       if (const auto* optToolButton = qstyleoption_cast<const QStyleOptionToolButton*>(opt)) {
         const auto& rect = optToolButton->rect;
 
-        // Special case/hack for buttons in TabBar.
+        const auto* toolBtnParent = w ? w->parentWidget() : nullptr;
         const auto isTabBarScrollButton =
-          qobject_cast<const QTabBar*>(w->parentWidget()) != nullptr && optToolButton->arrowType != Qt::NoArrow;
+          qobject_cast<const QTabBar*>(toolBtnParent) != nullptr && optToolButton->arrowType != Qt::NoArrow;
         const auto hasMenu = optToolButton->features.testFlag(QStyleOptionToolButton::HasMenu);
         const auto menuIsOnSeparateButton =
           hasMenu && optToolButton->features.testFlag(QStyleOptionToolButton::ToolButtonFeature::MenuButtonPopup);
 
-        const auto isMenuBarExtensionButton = qobject_cast<const QMenuBar*>(w->parentWidget()) != nullptr;
+        const auto isMenuBarExtensionButton = qobject_cast<const QMenuBar*>(toolBtnParent) != nullptr;
         const auto radius = isMenuBarExtensionButton ? _impl->theme.menuBarItemBorderRadius : _impl->theme.borderRadius;
 
         // Radiuses depend on the type of ToolButton.
@@ -582,7 +583,7 @@ void QlementineStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption* opt
 
         // Little hack to avoid having a checked extension button.
         auto buttonState = optToolButton->state;
-        const auto isExtensionButton = w->objectName() == QStringLiteral("qt_toolbar_ext_button");
+        const auto isExtensionButton = w && w->objectName() == QStringLiteral("qt_toolbar_ext_button");
         if (isExtensionButton) {
           buttonState.setFlag(State_On, false);
         }
@@ -670,7 +671,7 @@ void QlementineStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption* opt
         const auto isTabCellEditor =
           parentParentWidget && qobject_cast<const QAbstractItemView*>(parentParentWidget->parentWidget());
 
-        const auto isComboBoxLineEdit = qobject_cast<const QComboBox*>(w->parentWidget());
+        const auto isComboBoxLineEdit = qobject_cast<const QComboBox*>(parentWidget);
         const auto qPlainTextEdit = qobject_cast<const QPlainTextEdit*>(w);
         const auto isPlainQPlainTextEdit = qPlainTextEdit && qPlainTextEdit->frameShadow() == QFrame::Shadow::Plain;
         const auto isPlainLineEdit = !isComboBoxLineEdit && !qPlainTextEdit && optPanelLineEdit->lineWidth == 0;
@@ -736,9 +737,8 @@ void QlementineStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption* opt
           const auto mouse = getMouseState(opt->state);
           const auto selection = getSelectionState(opt->state);
           const auto active = getActiveState(opt->state);
-          const auto widgetHasFocus = w->hasFocus();
-          const auto focus =
-            widgetHasFocus && selection == SelectionState::Selected ? FocusState::Focused : FocusState::NotFocused;
+          const auto widgetHasFocus = w && w->hasFocus();
+          const auto focus = widgetHasFocus && selection == SelectionState::Selected ? FocusState::Focused : FocusState::NotFocused;
           const auto& fgColor = listItemForegroundColor(mouse, selection, focus, active);
           p->setRenderHint(QPainter::Antialiasing, true);
           p->setBrush(Qt::NoBrush);
@@ -1016,7 +1016,7 @@ void QlementineStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption* opt
 
         // Draw selection color in the arrow area,
         // except in comboboxes as selection drawing is handled by the delegate already.
-        const auto* popup = w->parentWidget();
+        const auto* popup = w ? w->parentWidget() : nullptr;
         const auto isComboBoxPopupContainer = popup != nullptr && popup->inherits("QComboBoxPrivateContainer");
         if (!isComboBoxPopupContainer) {
           drawPrimitive(PE_PanelItemViewItem, opt, p, w);
@@ -1298,11 +1298,14 @@ void QlementineStyle::drawControl(ControlElement ce, const QStyleOption* opt, QP
 
         // Avoid drawing the tab if the mouse is over scroll buttons.
         const auto* tabBar = qobject_cast<const QTabBar*>(w);
-        const auto cursorPos = tabBar->mapFromGlobal(QCursor::pos());
         const auto spacing = _impl->theme.spacing;
-        const auto buttonsVisible = QlementineStyleImpl::areTabBarScrollButtonsVisible(tabBar);
-        const auto buttonsW = buttonsVisible ? _impl->theme.controlHeightMedium * 2 + spacing * 3 : 0;
-        const auto mouseOverButtons = cursorPos.x() > tabBar->width() - buttonsW;
+        auto mouseOverButtons = false;
+        if (tabBar) {
+          const auto cursorPos = tabBar->mapFromGlobal(QCursor::pos());
+          const auto buttonsVisible = QlementineStyleImpl::areTabBarScrollButtonsVisible(tabBar);
+          const auto buttonsW = buttonsVisible ? _impl->theme.controlHeightMedium * 2 + spacing * 3 : 0;
+          mouseOverButtons = cursorPos.x() > tabBar->width() - buttonsW;
+        }
 
         // The tab shape must be drawn in these cases:
         // - Always when the tab is selected.
@@ -3016,7 +3019,7 @@ void QlementineStyle::drawComplexControl(
 
         const auto isMouseOver = toolbuttonOpt->state.testFlag(State_MouseOver);
         const auto isPressed = toolbuttonOpt->state.testFlag(State_Sunken);
-        const auto* parentTabBar = qobject_cast<QTabBar*>(w->parentWidget());
+        const auto* parentTabBar = w ? qobject_cast<QTabBar*>(w->parentWidget()) : nullptr;
         const auto isTabBarScrollButton = parentTabBar != nullptr && toolbuttonOpt->arrowType != Qt::NoArrow;
         const auto radius = _impl->theme.borderRadius;
         const auto buttonActive = toolbuttonOpt->activeSubControls.testFlag(SC_ToolButton);
@@ -3505,7 +3508,7 @@ QRect QlementineStyle::subControlRect(
             const auto contentMarginV = pixelMetric(PM_MenuVMargin);
             const auto shadowWidth = _impl->theme.spacing;
             const auto borderWidth = _impl->theme.borderWidth;
-            const auto width = std::max(opt->rect.width(), w->width());
+            const auto width = std::max(opt->rect.width(), w ? w->width() : 0);
             const auto height = opt->rect.height() + 12; // Not possible to change height here.
             const auto x = opt->rect.x() - shadowWidth - borderWidth - contentMarginH;
             const auto y = opt->rect.y() - shadowWidth - borderWidth - contentMarginV / 2; // TODO remove hardcoded
@@ -3799,7 +3802,7 @@ QSize QlementineStyle::sizeFromContents(
           contentWidth += _impl->theme.spacing;
         }
 
-        const auto maxSize = widget->maximumSize();
+        const auto maxSize = widget ? widget->maximumSize() : QSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
         const auto maxW = maxSize.width();
         const auto maxH = maxSize.height();
         const auto padding = pixelMetric(PM_ButtonMargin, opt, widget);
@@ -3851,12 +3854,12 @@ QSize QlementineStyle::sizeFromContents(
         const auto& iconSize = optToolButton->iconSize;
 
         // Special cases.
-        if (widget->inherits("QLineEditIconButton")) {
+        if (widget && widget->inherits("QLineEditIconButton")) {
           return _impl->theme.iconSize;
-        } else if (widget->inherits("QMenuBarExtension")) {
+        } else if (widget && widget->inherits("QMenuBarExtension")) {
           const auto extent = pixelMetric(PM_ToolBarExtensionExtent);
           return QSize{ extent, extent };
-        } else if (qobject_cast<QTabBar*>(widget->parentWidget())) {
+        } else if (widget && qobject_cast<QTabBar*>(widget->parentWidget())) {
           const auto w = _impl->theme.controlHeightMedium + static_cast<int>(spacing * 1.5);
           const auto h = _impl->theme.controlHeightLarge + spacing;
           return QSize{ w, h };
@@ -4080,7 +4083,7 @@ QSize QlementineStyle::sizeFromContents(
         const auto r = optFrame->rect;
         const auto w = r.width() - 2 * hardcodedLineEditHMargin;
         const auto h = _impl->theme.controlHeightLarge;
-        const auto* parent = widget->parentWidget();
+        const auto* parent = widget ? widget->parentWidget() : nullptr;
         const auto* treeView = parent ? qobject_cast<const QAbstractItemView*>(parent->parentWidget()) : nullptr;
         return treeView ? contentSize : QSize{ w, h };
       }
@@ -4105,7 +4108,7 @@ QSize QlementineStyle::sizeFromContents(
       if (const auto* optHeader = qstyleoption_cast<const QStyleOptionHeader*>(opt)) {
         const auto spacing = _impl->theme.spacing;
         const auto headerIsSelected = true;
-        auto font = QFont(widget->font());
+        auto font = widget ? QFont(widget->font()) : QFont();
         if (headerIsSelected) {
           font.setBold(true);
         }
@@ -4163,15 +4166,15 @@ QSize QlementineStyle::sizeFromContents(
         const auto hasCheck = features.testFlag(QStyleOptionViewItem::HasCheckIndicator);
         const auto& checkSize = hasCheck ? _impl->theme.iconSize : QSize{ 0, 0 };
 
-        auto font = QFont(widget->font());
+        auto font = widget ? QFont(widget->font()) : QFont();
         const auto fm = QFontMetrics(font);
-        const auto textW = qlementine::textWidth(fm, optItem->text);
+        const auto itemTextW = qlementine::textWidth(fm, optItem->text);
 
-        const auto w = textW + 2 * hPadding + (iconSize.width() > 0 ? iconSize.width() + spacing : 0)
+        const auto itemW = itemTextW + 2 * hPadding + (iconSize.width() > 0 ? iconSize.width() + spacing : 0)
                        + (checkSize.width() > 0 ? checkSize.width() + spacing : 0);
         const auto defaultH = _impl->theme.controlHeightLarge;
         const auto h = std::max({ iconSize.height() + spacing, textH + spacing, defaultH });
-        return QSize{ w, h };
+        return QSize{ itemW, h };
       }
       break;
     default:
@@ -4837,7 +4840,8 @@ void QlementineStyle::polish(QWidget* w) {
 #endif
 
   // Special case for the Qt-private buttons in a QLineEdit.
-  if (w->inherits("QLineEditIconButton")) {
+  if (w->inherits("QLineEditIconButton") && !w->property("_qlementine_polished").toBool()) {
+    w->setProperty("_qlementine_polished", true);
     w->installEventFilter(new LineEditButtonEventFilter(this, _impl->animations, qobject_cast<QToolButton*>(w)));
     w->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     // Fix hardcoded width in qlineedit_p.cpp:493
@@ -4867,7 +4871,8 @@ void QlementineStyle::polish(QWidget* w) {
   }
 
   // QFocusFrame is used to draw focus outside of the widget's bound.
-  if (shouldHaveExternalFocusFrame(w)) {
+  if (shouldHaveExternalFocusFrame(w) && !w->property("_qlementine_focusframe").toBool()) {
+    w->setProperty("_qlementine_focusframe", true);
     w->installEventFilter(new WidgetWithFocusFrameEventFilter(w));
   }
 
@@ -4876,42 +4881,73 @@ void QlementineStyle::polish(QWidget* w) {
     w->setFocusPolicy(Qt::TabFocus);
   }
 
+  auto supportsTransparency = []() -> bool {
+#ifdef Q_OS_LINUX
+    return QGuiApplication::platformName() != "xcb" ||
+           qEnvironmentVariable("XDG_SESSION_TYPE") == "wayland" ||
+           qEnvironmentVariableIsSet("KWIN_COMPOSE") ||
+           qEnvironmentVariableIsSet("COMPIZ_CONFIG_PROFILE") ||
+           qEnvironmentVariableIsSet("DESKTOP_SESSION");
+#else
+    return true;
+#endif
+  };
+
+  const bool useTransparency = supportsTransparency();
+
   // Allow for rounded corners in menus.
   if (auto* menu = qobject_cast<QMenu*>(w)) {
-    menu->setBackgroundRole(QPalette::NoRole);
-    menu->setAutoFillBackground(false);
-    menu->setAttribute(Qt::WA_TranslucentBackground, true);
-    menu->setAttribute(Qt::WA_OpaquePaintEvent, false);
-    menu->setAttribute(Qt::WA_NoSystemBackground, true);
-    menu->setWindowFlag(Qt::FramelessWindowHint, true);
-    menu->setWindowFlag(Qt::NoDropShadowWindowHint, true);
+    if (useTransparency) {
+      menu->setBackgroundRole(QPalette::NoRole);
+      menu->setAutoFillBackground(false);
+      menu->setAttribute(Qt::WA_TranslucentBackground, true);
+      menu->setAttribute(Qt::WA_OpaquePaintEvent, false);
+      menu->setAttribute(Qt::WA_NoSystemBackground, true);
+    } else {
+      menu->setAutoFillBackground(true);
+      menu->setAttribute(Qt::WA_TranslucentBackground, false);
+    }
+    if (!menu->windowFlags().testFlag(Qt::FramelessWindowHint))
+      menu->setWindowFlag(Qt::FramelessWindowHint, true);
+    if (!menu->windowFlags().testFlag(Qt::NoDropShadowWindowHint))
+      menu->setWindowFlag(Qt::NoDropShadowWindowHint, true);
     menu->setProperty("_q_windowsDropShadow", false);
 
     // Place the QMenu correctly by making up for the drop shadow margins.
-    menu->installEventFilter(new MenuEventFilter(menu));
+    if (!menu->property("_qlementine_polished").toBool()) {
+      menu->setProperty("_qlementine_polished", true);
+      menu->installEventFilter(new MenuEventFilter(menu));
+    }
   }
 
   // Try to remove the background...
   if (auto* itemView = qobject_cast<QAbstractItemView*>(w)) {
     auto* popup = itemView->parentWidget();
     auto isComboBoxPopupContainer = popup && popup->inherits("QComboBoxPrivateContainer");
-    if (isComboBoxPopupContainer) {
-      popup->setAttribute(Qt::WA_TranslucentBackground, true);
-      popup->setAttribute(Qt::WA_OpaquePaintEvent, false);
-      popup->setAttribute(Qt::WA_NoSystemBackground, true);
-      popup->setWindowFlag(Qt::FramelessWindowHint, true);
-      popup->setWindowFlag(Qt::NoDropShadowWindowHint, true);
+    if (isComboBoxPopupContainer && !itemView->property("_qlementine_polished").toBool()) {
+      itemView->setProperty("_qlementine_polished", true);
+      popup->setAttribute(Qt::WA_TranslucentBackground, false);
+      popup->setAutoFillBackground(true);
+      if (auto* viewport = itemView->viewport()) {
+        viewport->setAutoFillBackground(true);
+      }
+      if (!popup->windowFlags().testFlag(Qt::FramelessWindowHint))
+        popup->setWindowFlag(Qt::FramelessWindowHint, true);
+      if (!popup->windowFlags().testFlag(Qt::NoDropShadowWindowHint))
+        popup->setWindowFlag(Qt::NoDropShadowWindowHint, true);
       popup->setProperty("_q_windowsDropShadow", false);
 
       // Same shadow as QMenu.
       const auto shadowWidth = _impl->theme.spacing;
       const auto borderWidth = _impl->theme.borderWidth;
       const auto margin = shadowWidth + borderWidth;
-      popup->layout()->setContentsMargins(margin, margin, margin, margin);
+      if (popup->layout())
+          popup->layout()->setContentsMargins(margin, margin, margin, margin);
 
-      itemView->viewport()->setAutoFillBackground(false);
       auto* comboBox = findFirstParentOfType<QComboBox>(itemView);
-      new ComboboxItemViewFilter(comboBox, itemView, this);
+      if (comboBox) {
+        new ComboboxItemViewFilter(comboBox, itemView, this);
+      }
     }
   }
 
@@ -4932,21 +4968,30 @@ void QlementineStyle::polish(QWidget* w) {
     if (w->focusPolicy() == Qt::WheelFocus) {
       w->setFocusPolicy(Qt::StrongFocus);
     }
-    w->installEventFilter(new MouseWheelBlockerEventFilter(w));
+    if (!w->property("_qlementine_wheelblock").toBool()) {
+      w->setProperty("_qlementine_wheelblock", true);
+      w->installEventFilter(new MouseWheelBlockerEventFilter(w));
+    }
   }
 
   if (auto* comboBox = qobject_cast<QComboBox*>(w)) {
     comboBox->setSizeAdjustPolicy(QComboBox::SizeAdjustPolicy::AdjustToContents);
 
-    // Will define a delegate to stylize the QComboBox items,
-    comboBox->setItemDelegate(new ComboBoxDelegate(comboBox, *this));
-    if (auto* view = comboBox->view()) {
-      new ComboboxItemViewFilter(comboBox, view, this);
+    if (!comboBox->property("_qlementine_polished").toBool()) {
+      comboBox->setProperty("_qlementine_polished", true);
+      // Will define a delegate to stylize the QComboBox items,
+      comboBox->setItemDelegate(new ComboBoxDelegate(comboBox, *this));
+      if (auto* view = comboBox->view()) {
+        new ComboboxItemViewFilter(comboBox, view, this);
+      }
+      // Trigger the redefine when the QComboBox's view changes.
+      new ComboboxFilter(comboBox, this);
     }
-    // Trigger the redefine when the QComboBox's view changes.
-    new ComboboxFilter(comboBox, this);
   } else if (auto* tabBar = qobject_cast<QTabBar*>(w)) {
-    tabBar->installEventFilter(new TabBarEventFilter(tabBar));
+    if (!tabBar->property("_qlementine_polished").toBool()) {
+      tabBar->setProperty("_qlementine_polished", true);
+      tabBar->installEventFilter(new TabBarEventFilter(tabBar));
+    }
   } else if (auto* label = qobject_cast<QLabel*>(w)) {
     const auto labelObjName = label->objectName();
     const auto isInformativeLabel = labelObjName == QStringLiteral("qt_msgbox_informativelabel");
@@ -4957,7 +5002,9 @@ void QlementineStyle::polish(QWidget* w) {
 
   if (auto* messageBox = qobject_cast<QMessageBox*>(w)) {
     if (auto* textEdit = messageBox->findChild<QTextEdit*>()) {
-      textEdit->document()->setDocumentMargin(_impl->theme.spacing * 2);
+      if (auto* doc = textEdit->document()) {
+        doc->setDocumentMargin(_impl->theme.spacing * 2);
+      }
     }
   }
 
@@ -4973,7 +5020,10 @@ void QlementineStyle::polish(QWidget* w) {
 
   // Make the QPlainTextEdit have a frame by default.
   if (auto* plainTextEdit = qobject_cast<QPlainTextEdit*>(w)) {
-    plainTextEdit->installEventFilter(new TextEditEventFilter(plainTextEdit, this));
+    if (!plainTextEdit->property("_qlementine_polished").toBool()) {
+      plainTextEdit->setProperty("_qlementine_polished", true);
+      plainTextEdit->installEventFilter(new TextEditEventFilter(plainTextEdit, this));
+    }
     const auto& bgColor = textFieldBackgroundColor(MouseState::Normal, Status::Default);
     auto pal = plainTextEdit->palette();
     pal.setColor(QPalette::Base, bgColor);
@@ -4990,7 +5040,10 @@ void QlementineStyle::polish(QWidget* w) {
   }
   // Make the QTextEdit have a frame by default.
   if (auto* textEdit = qobject_cast<QTextEdit*>(w)) {
-    textEdit->installEventFilter(new TextEditEventFilter(textEdit, this));
+    if (!textEdit->property("_qlementine_polished").toBool()) {
+      textEdit->setProperty("_qlementine_polished", true);
+      textEdit->installEventFilter(new TextEditEventFilter(textEdit, this));
+    }
     const auto& bgColor = textFieldBackgroundColor(MouseState::Normal, Status::Default);
     auto pal = textEdit->palette();
     pal.setColor(QPalette::Base, bgColor);
@@ -5007,11 +5060,20 @@ void QlementineStyle::polish(QWidget* w) {
   }
 
   if (auto* lineEdit = qobject_cast<QLineEdit*>(w)) {
-    lineEdit->installEventFilter(new LineEditMenuEventFilter(lineEdit));
+    if (!lineEdit->property("_qlementine_polished").toBool()) {
+      lineEdit->setProperty("_qlementine_polished", true);
+      lineEdit->installEventFilter(new LineEditMenuEventFilter(lineEdit));
+    }
   } else if (auto* spinBox = qobject_cast<QSpinBox*>(w)) {
-    spinBox->installEventFilter(new LineEditMenuEventFilter(spinBox));
+    if (!spinBox->property("_qlementine_polished").toBool()) {
+      spinBox->setProperty("_qlementine_polished", true);
+      spinBox->installEventFilter(new LineEditMenuEventFilter(spinBox));
+    }
   } else if (auto* plainTextEdit = qobject_cast<QPlainTextEdit*>(w)) {
-    plainTextEdit->installEventFilter(new LineEditMenuEventFilter(plainTextEdit));
+    if (!plainTextEdit->property("_qlementine_polished").toBool()) {
+      plainTextEdit->setProperty("_qlementine_polished", true);
+      plainTextEdit->installEventFilter(new LineEditMenuEventFilter(plainTextEdit));
+    }
   }
 }
 
@@ -5455,35 +5517,21 @@ QColor QlementineStyle::listItemBackgroundColor(MouseState const mouse, Selectio
   FocusState const focus, ActiveState const active, const QModelIndex& index, const QWidget* widget) const {
   Q_UNUSED(index)
   Q_UNUSED(widget)
+  Q_UNUSED(focus)
+  Q_UNUSED(active)
   const auto isSelected = selected == SelectionState::Selected;
-  const auto isActive = active == ActiveState::Active && focus == FocusState::Focused;
 
-  if (isActive) {
-    switch (mouse) {
-      case MouseState::Pressed:
-        return isSelected ? _impl->theme.primaryColor : _impl->theme.neutralColor;
-      case MouseState::Hovered:
-        return isSelected ? _impl->theme.primaryColor : _impl->theme.neutralColorDisabled;
-      case MouseState::Disabled:
-        return isSelected ? _impl->theme.primaryColorDisabled : _impl->theme.neutralColorTransparent;
-      case MouseState::Transparent:
-      case MouseState::Normal:
-      default:
-        return isSelected ? _impl->theme.primaryColor : _impl->theme.neutralColorTransparent;
-    }
-  } else {
-    switch (mouse) {
-      case MouseState::Pressed:
-        return isSelected ? _impl->theme.neutralColor : _impl->theme.neutralColor;
-      case MouseState::Hovered:
-        return isSelected ? _impl->theme.neutralColor : _impl->theme.neutralColorDisabled;
-      case MouseState::Disabled:
-        return isSelected ? _impl->theme.neutralColor : _impl->theme.neutralColorTransparent;
-      case MouseState::Transparent:
-      case MouseState::Normal:
-      default:
-        return isSelected ? _impl->theme.neutralColor : _impl->theme.neutralColorTransparent;
-    }
+  switch (mouse) {
+    case MouseState::Pressed:
+      return isSelected ? _impl->theme.primaryColor : _impl->theme.neutralColor;
+    case MouseState::Hovered:
+      return isSelected ? _impl->theme.primaryColor : _impl->theme.neutralColorDisabled;
+    case MouseState::Disabled:
+      return isSelected ? _impl->theme.primaryColorDisabled : _impl->theme.neutralColorTransparent;
+    case MouseState::Transparent:
+    case MouseState::Normal:
+    default:
+      return isSelected ? _impl->theme.primaryColor : _impl->theme.neutralColorTransparent;
   }
 }
 
@@ -5727,13 +5775,13 @@ QColor const& QlementineStyle::tabBarBottomShadowColor() const {
 
 QColor const& QlementineStyle::tabBackgroundColor(MouseState const mouse, SelectionState const selected) const {
   const auto isSelected = selected == SelectionState::Selected;
-  const auto& selectedTabColor = _impl->theme.backgroundColorMain1;
+  const auto& selectedTabColor = _impl->theme.primaryColorDisabled;
   const auto& hoverTabColor = _impl->theme.semiTransparentColor3;
   const auto& defaultTabColor = _impl->theme.backgroundColorMain4;
 
   switch (mouse) {
     case MouseState::Hovered:
-      return isSelected ? selectedTabColor : hoverTabColor;
+      return isSelected ? _impl->theme.primaryAlternativeColor : hoverTabColor;
     case MouseState::Pressed:
       return _impl->theme.semiTransparentColor4;
     case MouseState::Normal:

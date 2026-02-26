@@ -121,10 +121,12 @@ public:
         return true;
       }
     } else if (type == QEvent::HoverMove) {
-      const auto* mouseEvent = static_cast<QMouseEvent*>(evt);
-      const auto beginX = _leftButton->x();
-      if (mouseEvent->pos().x() > beginX) {
-        _tabBar->update();
+      if (_leftButton) {
+        const auto* mouseEvent = static_cast<QMouseEvent*>(evt);
+        const auto beginX = _leftButton->x();
+        if (mouseEvent->pos().x() > beginX) {
+          _tabBar->update();
+        }
       }
     }
 

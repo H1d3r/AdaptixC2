@@ -26,15 +26,17 @@ DialogSettings::DialogSettings(Settings* s)
     connect(consoleThemeCombo, &QComboBox::currentTextChanged, buttonApply, [this](const QString &){buttonApply->setEnabled(true);} );
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
-    connect(consoleTimeCheckbox,       &QCheckBox::checkStateChanged, buttonApply, [this](int){buttonApply->setEnabled(true);} );
-    connect(consoleNoWrapCheckbox,     &QCheckBox::checkStateChanged, buttonApply, [this](int){buttonApply->setEnabled(true);} );
-    connect(consoleAutoScrollCheckbox, &QCheckBox::checkStateChanged, buttonApply, [this](int){buttonApply->setEnabled(true);} );
-    connect(sessionsHealthCheck,       &QCheckBox::checkStateChanged, this, &DialogSettings::onHealthChange );
+    connect(consoleTimeCheckbox,           &QCheckBox::checkStateChanged, buttonApply, [this](int){buttonApply->setEnabled(true);} );
+    connect(consoleNoWrapCheckbox,         &QCheckBox::checkStateChanged, buttonApply, [this](int){buttonApply->setEnabled(true);} );
+    connect(consoleAutoScrollCheckbox,     &QCheckBox::checkStateChanged, buttonApply, [this](int){buttonApply->setEnabled(true);} );
+    connect(consoleShowBackgroundCheckbox, &QCheckBox::checkStateChanged, buttonApply, [this](int){buttonApply->setEnabled(true);} );
+    connect(sessionsHealthCheck,           &QCheckBox::checkStateChanged, this, &DialogSettings::onHealthChange );
 #else
-    connect(consoleTimeCheckbox,       &QCheckBox::stateChanged, buttonApply, [this](int){buttonApply->setEnabled(true);} );
-    connect(consoleNoWrapCheckbox,     &QCheckBox::stateChanged, buttonApply, [this](int){buttonApply->setEnabled(true);} );
-    connect(consoleAutoScrollCheckbox, &QCheckBox::stateChanged, buttonApply, [this](int){buttonApply->setEnabled(true);} );
-    connect(sessionsHealthCheck,       &QCheckBox::stateChanged, this, &DialogSettings::onHealthChange );
+    connect(consoleTimeCheckbox,           &QCheckBox::stateChanged, buttonApply, [this](int){buttonApply->setEnabled(true);} );
+    connect(consoleNoWrapCheckbox,         &QCheckBox::stateChanged, buttonApply, [this](int){buttonApply->setEnabled(true);} );
+    connect(consoleAutoScrollCheckbox,     &QCheckBox::stateChanged, buttonApply, [this](int){buttonApply->setEnabled(true);} );
+    connect(consoleShowBackgroundCheckbox, &QCheckBox::stateChanged, buttonApply, [this](int){buttonApply->setEnabled(true);} );
+    connect(sessionsHealthCheck,           &QCheckBox::stateChanged, this, &DialogSettings::onHealthChange );
 #endif
 
     for ( int i = 0; i < sessionsCheckCount; i++) {
@@ -86,7 +88,7 @@ void DialogSettings::createUI()
     themeLabel = new QLabel("Main theme: ", mainSettingWidget);
     themeCombo = new QComboBox(mainSettingWidget);
     refreshAppThemeCombo();
-    themeImportBtn = new QPushButton("Import...", mainSettingWidget);
+    themeImportBtn = new QPushButton("Import", mainSettingWidget);
     themeImportBtn->setFixedWidth(80);
     connect(themeImportBtn, &QPushButton::clicked, this, [this]() {
         QString filePath = QFileDialog::getOpenFileName(this, "Import Application Theme", QString(), "JSON files (*.json)");
@@ -129,14 +131,15 @@ void DialogSettings::createUI()
     consoleSizeSpin->setMinimum(10000);
     consoleSizeSpin->setMaximum(1000000);
 
-    consoleTimeCheckbox       = new QCheckBox("Print date and time", consoleGroup);
-    consoleNoWrapCheckbox     = new QCheckBox("No Wrap mode", consoleGroup);
-    consoleAutoScrollCheckbox = new QCheckBox("Auto Scroll mode", consoleGroup);
+    consoleTimeCheckbox           = new QCheckBox("Print date and time", consoleGroup);
+    consoleNoWrapCheckbox         = new QCheckBox("No Wrap mode", consoleGroup);
+    consoleAutoScrollCheckbox     = new QCheckBox("Auto Scroll mode", consoleGroup);
+    consoleShowBackgroundCheckbox = new QCheckBox("Show background image", consoleGroup);
 
     consoleThemeLabel = new QLabel("Console theme:", consoleGroup);
     consoleThemeCombo = new QComboBox(consoleGroup);
     refreshConsoleThemeCombo();
-    consoleThemeImportBtn = new QPushButton("Import...", consoleGroup);
+    consoleThemeImportBtn = new QPushButton("Import", consoleGroup);
     consoleThemeImportBtn->setFixedWidth(80);
     connect(consoleThemeImportBtn, &QPushButton::clicked, this, [this]() {
         QString filePath = QFileDialog::getOpenFileName(this, "Import Console Theme", QString(), "JSON files (*.json)");
@@ -150,14 +153,15 @@ void DialogSettings::createUI()
     });
 
     consoleGroupLayout = new QGridLayout(consoleGroup);
-    consoleGroupLayout->addWidget(consoleSizeLabel,          0, 0, 1, 1);
-    consoleGroupLayout->addWidget(consoleSizeSpin,           0, 1, 1, 2);
-    consoleGroupLayout->addWidget(consoleTimeCheckbox,       1, 0, 1, 3);
-    consoleGroupLayout->addWidget(consoleNoWrapCheckbox,     2, 0, 1, 3);
-    consoleGroupLayout->addWidget(consoleAutoScrollCheckbox, 3, 0, 1, 3);
-    consoleGroupLayout->addWidget(consoleThemeLabel,         4, 0, 1, 1);
-    consoleGroupLayout->addWidget(consoleThemeCombo,         4, 1, 1, 1);
-    consoleGroupLayout->addWidget(consoleThemeImportBtn,     4, 2, 1, 1);
+    consoleGroupLayout->addWidget(consoleSizeLabel,              0, 0, 1, 1);
+    consoleGroupLayout->addWidget(consoleSizeSpin,               0, 1, 1, 2);
+    consoleGroupLayout->addWidget(consoleTimeCheckbox,           1, 0, 1, 3);
+    consoleGroupLayout->addWidget(consoleNoWrapCheckbox,         2, 0, 1, 3);
+    consoleGroupLayout->addWidget(consoleAutoScrollCheckbox,     3, 0, 1, 3);
+    consoleGroupLayout->addWidget(consoleShowBackgroundCheckbox, 4, 0, 1, 3);
+    consoleGroupLayout->addWidget(consoleThemeLabel,             5, 0, 1, 1);
+    consoleGroupLayout->addWidget(consoleThemeCombo,             5, 1, 1, 1);
+    consoleGroupLayout->addWidget(consoleThemeImportBtn,         5, 2, 1, 1);
     consoleGroup->setLayout(consoleGroupLayout);
 
     mainSettingLayout->addWidget(themeLabel,        0, 0, 1, 1);
@@ -427,7 +431,10 @@ void DialogSettings::onApply() const
     settings->data.ConsoleNoWrap = consoleNoWrapCheckbox->isChecked();
     settings->data.ConsoleAutoScroll = consoleAutoScrollCheckbox->isChecked();
 
-    if (settings->data.ConsoleTheme != consoleThemeCombo->currentText()) {
+    bool bgChanged = settings->data.ConsoleShowBackground != consoleShowBackgroundCheckbox->isChecked();
+    settings->data.ConsoleShowBackground = consoleShowBackgroundCheckbox->isChecked();
+
+    if (settings->data.ConsoleTheme != consoleThemeCombo->currentText() || bgChanged) {
         settings->data.ConsoleTheme = consoleThemeCombo->currentText();
         ConsoleThemeManager::instance().loadTheme(settings->data.ConsoleTheme);
     }
@@ -479,6 +486,7 @@ void DialogSettings::loadSettings()
     consoleTimeCheckbox->setChecked(settings->data.ConsoleTime);
     consoleNoWrapCheckbox->setChecked(settings->data.ConsoleNoWrap);
     consoleAutoScrollCheckbox->setChecked(settings->data.ConsoleAutoScroll);
+    consoleShowBackgroundCheckbox->setChecked(settings->data.ConsoleShowBackground);
     consoleThemeCombo->setCurrentText(settings->data.ConsoleTheme);
 
     for (int i = 0; i < sessionsCheckCount; i++)

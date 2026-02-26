@@ -31,9 +31,12 @@ public:
       viewport->installEventFilter(this);
     }
 
-    auto* comboBoxPopup = _view->parentWidget();
-    comboBoxPopup->installEventFilter(this);
-    _comboBox->installEventFilter(this);
+    if (auto* comboBoxPopup = _view->parentWidget()) {
+      comboBoxPopup->installEventFilter(this);
+    }
+    if (_comboBox) {
+      _comboBox->installEventFilter(this);
+    }
 
     if (const auto* treeView = qobject_cast<QTreeView*>(_view)) {
       QObject::connect(treeView, &QTreeView::expanded, this, &ComboboxItemViewFilter::fixViewGeometry);
@@ -113,7 +116,9 @@ private:
 
           view->setFixedWidth(width);
           view->setFixedHeight(height);
-          view->parentWidget()->adjustSize();
+          if (auto* parentW = view->parentWidget()) {
+            parentW->adjustSize();
+          }
         }
       }
     }

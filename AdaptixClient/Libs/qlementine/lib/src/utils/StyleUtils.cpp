@@ -26,6 +26,8 @@
 
 namespace oclero::qlementine {
 bool shouldHaveHoverEvents(const QWidget* w) {
+  if (!w)
+    return false;
   if (w->property("qlementine_no_hover").toBool()) {
     return false;
   }

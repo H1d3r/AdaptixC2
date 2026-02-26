@@ -3,7 +3,9 @@
 #include <UI/Widgets/DockWidgetRegister.h>
 #include <Client/AuthProfile.h>
 #include <Client/ConsoleTheme.h>
+#include <Client/Settings.h>
 #include <Utils/Convert.h>
+#include <MainAdaptix.h>
 
 REGISTER_DOCK_WIDGET(LogsWidget, "Logs", true)
 
@@ -190,7 +192,9 @@ void LogsWidget::applyTheme()
 {
     const auto& theme = ConsoleThemeManager::instance().theme();
     const auto& bg = theme.background;
-    logsConsoleTextEdit->setConsoleBackground(bg.color, bg.type == ConsoleBackground::Image ? bg.imagePath : QString(), bg.dimming);
+    bool showBg = GlobalClient->settings->data.ConsoleShowBackground;
+    QString imagePath = (showBg && bg.type == ConsoleBackground::Image) ? bg.imagePath : QString();
+    logsConsoleTextEdit->setConsoleBackground(bg.color, imagePath, bg.dimming);
     logsConsoleTextEdit->setStyleSheet(QString("QPlainTextEdit { color: %1; border: 1px solid #2A2A2A; border-radius: 4px; }").arg(theme.textColor.name()));
 }
 

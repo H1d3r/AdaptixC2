@@ -38,6 +38,7 @@ void Settings::SetDefault()
     this->data.ConsoleBufferSize = 50000;
     this->data.ConsoleNoWrap = true;
     this->data.ConsoleAutoScroll = false;
+    this->data.ConsoleShowBackground = true;
     this->data.ConsoleTheme = "console_adaptix_dark";
 
     for ( int i = 0; i < 16; i++) {

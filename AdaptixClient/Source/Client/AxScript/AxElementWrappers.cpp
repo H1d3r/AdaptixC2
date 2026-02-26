@@ -22,7 +22,7 @@ QAction* AxActionWrapper::action() const { return this->pAction; }
 void AxActionWrapper::setContext(QVariantList context)
 {
     disconnect(pAction, nullptr, this, nullptr);
-    connect(pAction, &QAction::triggered, this, [this, context]() { triggerWithContext(context); });
+    connect(pAction, &QAction::triggered, this, [this, context]() { triggerWithContext(context); }, Qt::QueuedConnection);
 }
 
 void AxActionWrapper::triggerWithContext(const QVariantList& arg) const

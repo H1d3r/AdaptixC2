@@ -55,7 +55,7 @@ void NotificationBadge::setWidget(QWidget* widget) {
     hide();
 
     // Set new one.
-    if (widget && !widget->isWindow() && widget->parentWidget()->windowType() != Qt::SubWindow) {
+    if (widget && !widget->isWindow() && (!widget->parentWidget() || widget->parentWidget()->windowType() != Qt::SubWindow)) {
       _widget = widget;
       _widget->installEventFilter(this);
 
