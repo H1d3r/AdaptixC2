@@ -911,31 +911,47 @@ QList<Commander*> AdaptixWidget::GetCommandersAll() const
 void AdaptixWidget::AddCommandsToCommanders(const CommandsGroup &group, const QStringList &listeners, const QStringList &agents, const QList<int> &osList)
 {
     QList<int> effectiveOs = osList.isEmpty() ? QList<int>{OS_WINDOWS, OS_LINUX, OS_MAC} : osList;
-    QStringList effectiveListeners = listeners.isEmpty() ? QStringList{""} : listeners;
 
     for (const QString &agentName : agents) {
         for (int os : effectiveOs) {
-            for (const QString &listener : effectiveListeners) {
-                Commander* targetCommander = nullptr;
-
+            if (listeners.isEmpty()) {
+                bool found = false;
                 for (auto &regAgent : this->RegisterAgents) {
                     if (regAgent.name == agentName && regAgent.os == os) {
-                        bool listenerMatch = listener.isEmpty() || regAgent.listenerType.isEmpty() || regAgent.listenerType == listener;
-                        if (listenerMatch) {
-                            targetCommander = regAgent.commander;
-                            break;
-                        }
+                        regAgent.commander->AddClientGroup(group);
+                        found = true;
                     }
                 }
-
-                if (!targetCommander) {
-                    targetCommander = new Commander();
+                if (!found) {
+                    auto* targetCommander = new Commander();
                     targetCommander->SetAgentType(agentName);
-                    RegAgentConfig config = {agentName, listener, os, targetCommander, true};
+                    RegAgentConfig config = {agentName, "", os, targetCommander, true};
                     RegisterAgents.push_back(config);
+                    targetCommander->AddClientGroup(group);
                 }
+            } else {
+                for (const QString &listener : listeners) {
+                    Commander* targetCommander = nullptr;
 
-                targetCommander->AddClientGroup(group);
+                    for (auto &regAgent : this->RegisterAgents) {
+                        if (regAgent.name == agentName && regAgent.os == os) {
+                            bool listenerMatch = regAgent.listenerType.isEmpty() || regAgent.listenerType == listener;
+                            if (listenerMatch) {
+                                targetCommander = regAgent.commander;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!targetCommander) {
+                        targetCommander = new Commander();
+                        targetCommander->SetAgentType(agentName);
+                        RegAgentConfig config = {agentName, listener, os, targetCommander, true};
+                        RegisterAgents.push_back(config);
+                    }
+
+                    targetCommander->AddClientGroup(group);
+                }
             }
         }
     }
